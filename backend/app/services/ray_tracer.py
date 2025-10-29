@@ -8,7 +8,7 @@ import math
 from dataclasses import dataclass
 
 from app.services.color_mixer import ColorMixer, MineralColor, WaveColor
-from app.services.piece_geometry import Edge, PieceGeometry
+from app.services.piece_geometry import Edge, PieceColor, PieceGeometry
 
 
 @dataclass
@@ -378,7 +378,7 @@ class RayTracer:
 
         return "?"
 
-    def _piece_color_to_mineral(self, piece_color) -> MineralColor:
+    def _piece_color_to_mineral(self, piece_color: PieceColor) -> MineralColor:
         """Convert piece color to mineral color enum."""
         color_map = {
             "red": MineralColor.RED,

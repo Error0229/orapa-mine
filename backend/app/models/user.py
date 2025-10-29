@@ -19,7 +19,7 @@ class User(Table, tablename="users"):
     created_at = Timestamp()
 
     @classmethod
-    def get_readable(cls):
+    def get_readable(cls) -> Readable:
         return Readable(template="%s", columns=[cls.username])
 
 
@@ -38,5 +38,5 @@ class Player(Table, tablename="players"):
     updated_at = Timestamp()
 
     @classmethod
-    def get_readable(cls):
+    def get_readable(cls) -> Readable:
         return Readable(template="%s", columns=[cls.display_name])

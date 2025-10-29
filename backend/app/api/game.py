@@ -34,15 +34,16 @@ game_shots_store: dict = {}
 async def create_game(game_data: GameCreate) -> GameResponse:
     """Create a new game session."""
     session_id = secrets.token_urlsafe(16)
+    created_at = datetime.utcnow()
 
-    game = {
+    game: dict[str, object] = {
         "session_id": session_id,
         "status": "waiting",
         "current_turn_player": None,
         "director_username": None,
         "max_players": game_data.max_players,
         "difficulty": game_data.difficulty,
-        "created_at": datetime.utcnow(),
+        "created_at": created_at,
         "started_at": None,
         "completed_at": None,
         "winner_username": None,
@@ -53,7 +54,19 @@ async def create_game(game_data: GameCreate) -> GameResponse:
     game_pieces_store[session_id] = []
     game_shots_store[session_id] = []
 
-    return GameResponse(**game)
+    return GameResponse(
+        session_id=session_id,
+        status="waiting",
+        current_turn_player=None,
+        director_username=None,
+        max_players=game_data.max_players,
+        difficulty=game_data.difficulty,
+        players=[],
+        created_at=created_at,
+        started_at=None,
+        completed_at=None,
+        winner_username=None,
+    )
 
 
 @router.get("/{session_id}", response_model=GameResponse)
