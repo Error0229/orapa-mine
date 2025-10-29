@@ -2,7 +2,7 @@
 User and Player models.
 """
 
-from piccolo.columns import Boolean, Integer, Timestamp, Varchar
+from piccolo.columns import Boolean, ForeignKey, Integer, OnDelete, Timestamp, Varchar
 from piccolo.columns.readable import Readable
 from piccolo.table import Table
 
@@ -28,7 +28,7 @@ class Player(Table, tablename="players"):
     Player profile with game statistics.
     """
 
-    user = Varchar(length=50, unique=True, index=True)  # References User.username
+    user = ForeignKey(User, on_delete=OnDelete.cascade, unique=True, index=True)
     display_name = Varchar(length=100)
     games_played = Integer(default=0)
     games_won = Integer(default=0)

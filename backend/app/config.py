@@ -41,6 +41,15 @@ class Settings(BaseSettings):
         default="http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173"
     )
 
+    # Supabase
+    supabase_url: str = ""
+    supabase_anon_key: str = ""
+    supabase_service_role_key: str = ""
+    supabase_jwt_secret: str = ""
+    postgres_url: str = ""
+    postgres_prisma_url: str = ""
+    postgres_url_non_pooling: str = ""
+
     @property
     def allowed_origins_list(self) -> list[str]:
         """Parse comma-separated origins string into list."""

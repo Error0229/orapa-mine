@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
+import DirectorViewModern from './DirectorViewModern'
 import './GameBoard.css'
 
 interface GameBoardProps {
   sessionId: string
   username: string
   role: 'director' | 'explorer'
+  difficulty?: number
 }
 
 interface WavePathSegment {
@@ -28,12 +30,17 @@ const GRID_WIDTH = 10
 const GRID_HEIGHT = 8
 const CELL_SIZE = 50
 
-function GameBoard({ sessionId, username, role }: GameBoardProps) {
+function GameBoard({ sessionId, username, role, difficulty = 5 }: GameBoardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [selectedPosition, setSelectedPosition] = useState('')
   const [waveShots, setWaveShots] = useState<WaveShot[]>([])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+
+  // If director, show modern director view instead
+  if (role === 'director') {
+    return <DirectorViewModern sessionId={sessionId} username={username} difficulty={difficulty} />
+  }
 
   useEffect(() => {
     drawGrid()
@@ -236,14 +243,6 @@ function GameBoard({ sessionId, username, role }: GameBoardProps) {
           </div>
         )}
 
-        {role === 'director' && (
-          <div className="controls">
-            <h3>Director View</h3>
-            <p className="text-dim">
-              Place pieces using the backend API or wait for explorers to shoot waves.
-            </p>
-          </div>
-        )}
       </div>
 
       <div className="shot-history">

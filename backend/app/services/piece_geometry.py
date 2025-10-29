@@ -170,27 +170,28 @@ class PieceGeometry:
 def create_large_triangle(color: PieceColor) -> PieceGeometry:
     """
     Create a large isosceles right triangle.
-    - Long side (hypotenuse): 4 cells
+    - Hypotenuse (long side): 4 cells, aligned with grid
+    - Two equal legs: 2√2 ≈ 2.828 cells each
     - Height: 2 cells
     - Area: 4 cells
-    - Aligns long side with grid
+    - Right angle at top-left, hypotenuse along bottom
 
-    Shape (aligned with long side horizontal):
+    Shape (hypotenuse aligned horizontally):
         |\
         | \
         |__\
         4 cells wide, 2 cells tall
     """
     vertices = [
-        (0.0, 0.0),  # Top-left
+        (0.0, 0.0),  # Top-left (right angle)
         (0.0, 2.0),  # Bottom-left
-        (4.0, 2.0),  # Bottom-right (hypotenuse end)
+        (4.0, 0.0),  # Top-right (hypotenuse along bottom when rotated)
     ]
 
     edges = [
-        Edge((0.0, 0.0), (0.0, 2.0), angle=270, is_diagonal=False),  # Left vertical
-        Edge((0.0, 2.0), (4.0, 2.0), angle=0, is_diagonal=False),  # Bottom horizontal
-        Edge((4.0, 2.0), (0.0, 0.0), angle=135, is_diagonal=True),  # Hypotenuse (45°)
+        Edge((0.0, 0.0), (0.0, 2.0), angle=270, is_diagonal=False),  # Left vertical leg
+        Edge((0.0, 2.0), (4.0, 0.0), angle=45, is_diagonal=True),    # Hypotenuse (45°)
+        Edge((4.0, 0.0), (0.0, 0.0), angle=180, is_diagonal=False),  # Top horizontal leg
     ]
 
     return PieceGeometry(
@@ -207,25 +208,27 @@ def create_large_triangle(color: PieceColor) -> PieceGeometry:
 def create_medium_triangle() -> PieceGeometry:
     """
     Create a medium isosceles right triangle.
-    - Short sides: 2 cells each
+    - Two equal legs: 2 cells each
+    - Hypotenuse: 2√2 ≈ 2.828 cells
     - Area: 2 cells
-    - Aligns short side with grid
+    - Right angle at origin
 
-    Shape:
+    Shape (isosceles right triangle):
         |\
-        |_\
-        2x2 cells
+        | \
+        |__\
+        2 × 2 cells
     """
     vertices = [
-        (0.0, 0.0),  # Top-left
-        (0.0, 2.0),  # Bottom-left
-        (2.0, 2.0),  # Bottom-right
+        (0.0, 0.0),  # Right angle corner
+        (0.0, 2.0),  # Top of vertical leg
+        (2.0, 0.0),  # End of horizontal leg
     ]
 
     edges = [
-        Edge((0.0, 0.0), (0.0, 2.0), angle=270, is_diagonal=False),  # Left vertical
-        Edge((0.0, 2.0), (2.0, 2.0), angle=0, is_diagonal=False),  # Bottom horizontal
-        Edge((2.0, 2.0), (0.0, 0.0), angle=135, is_diagonal=True),  # Hypotenuse
+        Edge((0.0, 0.0), (0.0, 2.0), angle=270, is_diagonal=False),  # Left vertical leg
+        Edge((0.0, 2.0), (2.0, 0.0), angle=135, is_diagonal=True),  # Hypotenuse (45°)
+        Edge((2.0, 0.0), (0.0, 0.0), angle=180, is_diagonal=False),  # Bottom horizontal leg
     ]
 
     return PieceGeometry(
@@ -240,26 +243,27 @@ def create_medium_triangle() -> PieceGeometry:
 def create_small_triangle() -> PieceGeometry:
     """
     Create a small isosceles right triangle.
-    - Long side (hypotenuse): 2 cells
+    - Hypotenuse (long side): 2 cells, aligned with grid
+    - Two equal legs: √2 ≈ 1.414 cells each
     - Height: 1 cell
     - Area: 1 cell
-    - Aligns long side with grid
+    - Right angle at top-left, hypotenuse along bottom
 
-    Shape:
+    Shape (hypotenuse aligned horizontally):
         |\
         |_\
         2 cells wide, 1 cell tall
     """
     vertices = [
-        (0.0, 0.0),  # Top-left
+        (0.0, 0.0),  # Top-left (right angle)
         (0.0, 1.0),  # Bottom-left
-        (2.0, 1.0),  # Bottom-right
+        (2.0, 0.0),  # Top-right (hypotenuse along bottom when rotated)
     ]
 
     edges = [
-        Edge((0.0, 0.0), (0.0, 1.0), angle=270, is_diagonal=False),  # Left vertical
-        Edge((0.0, 1.0), (2.0, 1.0), angle=0, is_diagonal=False),  # Bottom horizontal
-        Edge((2.0, 1.0), (0.0, 0.0), angle=135, is_diagonal=True),  # Hypotenuse
+        Edge((0.0, 0.0), (0.0, 1.0), angle=270, is_diagonal=False),  # Left vertical leg
+        Edge((0.0, 1.0), (2.0, 0.0), angle=45, is_diagonal=True),    # Hypotenuse (45°)
+        Edge((2.0, 0.0), (0.0, 0.0), angle=180, is_diagonal=False),  # Top horizontal leg
     ]
 
     return PieceGeometry(
