@@ -20,6 +20,14 @@ class WaveColor(str, Enum):
     BLACK = "black"  # Red + Blue + Yellow or absorbed
     TRANSPARENT = "transparent"  # No color change
 
+    # Light versions (when white mixes with colors)
+    LIGHT_RED = "light_red"
+    LIGHT_BLUE = "light_blue"
+    LIGHT_YELLOW = "light_yellow"
+    LIGHT_VIOLET = "light_violet"
+    LIGHT_ORANGE = "light_orange"
+    LIGHT_GREEN = "light_green"
+
 
 class MineralColor(str, Enum):
     """Colors of mineral pieces."""
@@ -51,9 +59,13 @@ class ColorMixer:
         if mineral_color == MineralColor.BLACK:
             return None
 
-        # Transparent/white minerals don't change color
-        if mineral_color in (MineralColor.TRANSPARENT, MineralColor.WHITE):
+        # Transparent minerals don't change color
+        if mineral_color == MineralColor.TRANSPARENT:
             return wave_color
+
+        # White mineral lightens the color
+        if mineral_color == MineralColor.WHITE:
+            return ColorMixer._lighten_color(wave_color)
 
         # Break down current wave color into primary components
         components = ColorMixer._get_color_components(wave_color)
@@ -68,6 +80,36 @@ class ColorMixer:
 
         # Determine resulting color from components
         return ColorMixer._components_to_color(components)
+
+    @staticmethod
+    def _lighten_color(color: WaveColor) -> WaveColor:
+        """
+        Lighten a color when it hits a white mineral.
+
+        Args:
+            color: Current wave color
+
+        Returns:
+            Lightened version of the color
+        """
+        lightening_map: dict[WaveColor, WaveColor] = {
+            WaveColor.WHITE: WaveColor.WHITE,  # Already light
+            WaveColor.RED: WaveColor.LIGHT_RED,
+            WaveColor.BLUE: WaveColor.LIGHT_BLUE,
+            WaveColor.YELLOW: WaveColor.LIGHT_YELLOW,
+            WaveColor.VIOLET: WaveColor.LIGHT_VIOLET,
+            WaveColor.ORANGE: WaveColor.LIGHT_ORANGE,
+            WaveColor.GREEN: WaveColor.LIGHT_GREEN,
+            WaveColor.BLACK: WaveColor.WHITE,  # Black + white = white
+            # Light colors stay light
+            WaveColor.LIGHT_RED: WaveColor.LIGHT_RED,
+            WaveColor.LIGHT_BLUE: WaveColor.LIGHT_BLUE,
+            WaveColor.LIGHT_YELLOW: WaveColor.LIGHT_YELLOW,
+            WaveColor.LIGHT_VIOLET: WaveColor.LIGHT_VIOLET,
+            WaveColor.LIGHT_ORANGE: WaveColor.LIGHT_ORANGE,
+            WaveColor.LIGHT_GREEN: WaveColor.LIGHT_GREEN,
+        }
+        return lightening_map.get(color, color)
 
     @staticmethod
     def _get_color_components(color: WaveColor) -> set[str]:
@@ -87,6 +129,13 @@ class ColorMixer:
             WaveColor.ORANGE: {"red", "yellow"},
             WaveColor.GREEN: {"blue", "yellow"},
             WaveColor.BLACK: {"red", "blue", "yellow"},
+            # Light colors have the same components as regular colors
+            WaveColor.LIGHT_RED: {"red"},
+            WaveColor.LIGHT_BLUE: {"blue"},
+            WaveColor.LIGHT_YELLOW: {"yellow"},
+            WaveColor.LIGHT_VIOLET: {"red", "blue"},
+            WaveColor.LIGHT_ORANGE: {"red", "yellow"},
+            WaveColor.LIGHT_GREEN: {"blue", "yellow"},
         }
 
         return mapping.get(color, set())
@@ -135,5 +184,12 @@ class ColorMixer:
             WaveColor.GREEN: "#00FF00",
             WaveColor.BLACK: "#000000",
             WaveColor.TRANSPARENT: "#FFFFFF00",  # Transparent white
+            # Light colors (pastel versions)
+            WaveColor.LIGHT_RED: "#FFB3B3",
+            WaveColor.LIGHT_BLUE: "#B3B3FF",
+            WaveColor.LIGHT_YELLOW: "#FFFFB3",
+            WaveColor.LIGHT_VIOLET: "#E0B3FF",
+            WaveColor.LIGHT_ORANGE: "#FFD9B3",
+            WaveColor.LIGHT_GREEN: "#B3FFB3",
         }
         return color_map.get(color, "#FFFFFF")

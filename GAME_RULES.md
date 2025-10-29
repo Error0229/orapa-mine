@@ -183,11 +183,10 @@ The wave enters **at the cell position**, not between cells.
 The elastic wave starts as **white**. When it passes through or reflects off colored minerals, the colors mix according to these rules:
 
 ### Basic Color Changes
+When a white wave hits a colored mineral, it takes that color:
 - White + **Red** = Red
 - White + **Blue** = Blue
 - White + **Yellow** = Yellow
-- White + **Transparent** = White (no change)
-- Any color + **Black (Petroleum)** = Wave dissipates (no exit reported)
 
 ### Color Mixing (Additive)
 When a wave reflects off multiple colored minerals:
@@ -197,8 +196,20 @@ When a wave reflects off multiple colored minerals:
 - **Blue + Yellow** = Green
 - **Red + Blue + Yellow** = Black
 
+### White Mineral Effect (Lightening)
+When a colored wave hits a **white mineral**, the color becomes lighter:
+
+- Red + **White** = Light Red (pastel)
+- Blue + **White** = Light Blue (pastel)
+- Yellow + **White** = Light Yellow (pastel)
+- Violet + **White** = Light Violet (pastel)
+- Orange + **White** = Light Orange (pastel)
+- Green + **White** = Light Green (pastel)
+- Black + **White** = White (completely lightened)
+
 ### Special Cases
-- **Transparent/White mineral**: Reflects the wave without changing its color
+- **Transparent mineral**: Reflects the wave without changing its color
+- **White mineral**: Lightens the wave's color (makes it pastel)
 - **Black (Petroleum)**: The wave is absorbed and dissipates - Director reports "no exit"
 
 ## Making a Guess
