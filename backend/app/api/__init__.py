@@ -1,7 +1,9 @@
 """
 API routes for Orapa Mine.
 """
+
 from fastapi import APIRouter
+
 from app.api import game, user
 
 api_router = APIRouter()

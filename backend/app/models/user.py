@@ -1,20 +1,17 @@
 """
 User and Player models.
 """
-from piccolo.table import Table
-from piccolo.columns import (
-    Varchar,
-    Timestamp,
-    Integer,
-    Boolean,
-)
+
+from piccolo.columns import Boolean, Integer, Timestamp, Varchar
 from piccolo.columns.readable import Readable
+from piccolo.table import Table
 
 
 class User(Table, tablename="users"):
     """
     User account for authentication.
     """
+
     username = Varchar(length=50, unique=True, index=True)
     email = Varchar(length=255, unique=True, index=True, null=True)
     hashed_password = Varchar(length=255)
@@ -30,6 +27,7 @@ class Player(Table, tablename="players"):
     """
     Player profile with game statistics.
     """
+
     user = Varchar(length=50, unique=True, index=True)  # References User.username
     display_name = Varchar(length=100)
     games_played = Integer(default=0)

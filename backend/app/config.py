@@ -1,8 +1,8 @@
 """
 Application configuration using Pydantic settings.
 """
+
 from pydantic_settings import BaseSettings
-from typing import List
 
 
 class Settings(BaseSettings):
@@ -31,11 +31,11 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # CORS
-    allowed_origins: List[str] = [
+    allowed_origins: list[str] = [
         "http://localhost:3000",
         "http://localhost:5173",
         "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
     ]
 
     class Config:

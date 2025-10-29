@@ -3,25 +3,27 @@ Color mixing logic for Orapa Mine elastic waves.
 
 Implements additive color mixing when waves reflect off colored minerals.
 """
-from typing import Set
+
 from enum import Enum
 
 
 class WaveColor(str, Enum):
     """Colors that elastic waves can have."""
+
     WHITE = "white"
     RED = "red"
     BLUE = "blue"
     YELLOW = "yellow"
-    VIOLET = "violet"      # Red + Blue
-    ORANGE = "orange"      # Red + Yellow
-    GREEN = "green"        # Blue + Yellow
-    BLACK = "black"        # Red + Blue + Yellow or absorbed
+    VIOLET = "violet"  # Red + Blue
+    ORANGE = "orange"  # Red + Yellow
+    GREEN = "green"  # Blue + Yellow
+    BLACK = "black"  # Red + Blue + Yellow or absorbed
     TRANSPARENT = "transparent"  # No color change
 
 
 class MineralColor(str, Enum):
     """Colors of mineral pieces."""
+
     RED = "red"
     BLUE = "blue"
     YELLOW = "yellow"
@@ -68,34 +70,29 @@ class ColorMixer:
         return ColorMixer._components_to_color(components)
 
     @staticmethod
-    def _get_color_components(color: WaveColor) -> Set[str]:
+    def _get_color_components(color: WaveColor) -> set[str]:
         """
         Break down a color into its primary components (red, blue, yellow).
 
         Returns:
             Set of primary color component strings
         """
-        if color == WaveColor.WHITE:
-            return set()
-        elif color == WaveColor.RED:
-            return {"red"}
-        elif color == WaveColor.BLUE:
-            return {"blue"}
-        elif color == WaveColor.YELLOW:
-            return {"yellow"}
-        elif color == WaveColor.VIOLET:
-            return {"red", "blue"}
-        elif color == WaveColor.ORANGE:
-            return {"red", "yellow"}
-        elif color == WaveColor.GREEN:
-            return {"blue", "yellow"}
-        elif color == WaveColor.BLACK:
-            return {"red", "blue", "yellow"}
-        else:
-            return set()
+        # Use a dictionary mapping to avoid long if/elif chains (SIM116).
+        mapping: dict[WaveColor, set[str]] = {
+            WaveColor.WHITE: set(),
+            WaveColor.RED: {"red"},
+            WaveColor.BLUE: {"blue"},
+            WaveColor.YELLOW: {"yellow"},
+            WaveColor.VIOLET: {"red", "blue"},
+            WaveColor.ORANGE: {"red", "yellow"},
+            WaveColor.GREEN: {"blue", "yellow"},
+            WaveColor.BLACK: {"red", "blue", "yellow"},
+        }
+
+        return mapping.get(color, set())
 
     @staticmethod
-    def _components_to_color(components: Set[str]) -> WaveColor:
+    def _components_to_color(components: set[str]) -> WaveColor:
         """
         Convert primary color components to a wave color.
 
@@ -105,30 +102,20 @@ class ColorMixer:
         Returns:
             Resulting wave color
         """
-        if not components:
-            return WaveColor.WHITE
+        # Map frozenset of primary components to resulting WaveColor to avoid
+        # multiple conditional checks (SIM116).
+        mapping: dict[frozenset, WaveColor] = {
+            frozenset(): WaveColor.WHITE,
+            frozenset({"red"}): WaveColor.RED,
+            frozenset({"blue"}): WaveColor.BLUE,
+            frozenset({"yellow"}): WaveColor.YELLOW,
+            frozenset({"red", "blue"}): WaveColor.VIOLET,
+            frozenset({"red", "yellow"}): WaveColor.ORANGE,
+            frozenset({"blue", "yellow"}): WaveColor.GREEN,
+            frozenset({"red", "blue", "yellow"}): WaveColor.BLACK,
+        }
 
-        if len(components) == 1:
-            color = list(components)[0]
-            if color == "red":
-                return WaveColor.RED
-            elif color == "blue":
-                return WaveColor.BLUE
-            elif color == "yellow":
-                return WaveColor.YELLOW
-
-        if len(components) == 2:
-            if "red" in components and "blue" in components:
-                return WaveColor.VIOLET
-            elif "red" in components and "yellow" in components:
-                return WaveColor.ORANGE
-            elif "blue" in components and "yellow" in components:
-                return WaveColor.GREEN
-
-        if len(components) == 3:
-            return WaveColor.BLACK
-
-        return WaveColor.WHITE
+        return mapping.get(frozenset(components), WaveColor.WHITE)
 
     @staticmethod
     def get_hex_color(color: WaveColor) -> str:

@@ -1,10 +1,12 @@
 """
 Piccolo configuration file.
 """
+
+import os
+
+from dotenv import load_dotenv
 from piccolo.conf.apps import AppRegistry
 from piccolo.engine.postgres import PostgresEngine
-from dotenv import load_dotenv
-import os
 
 # Load environment variables
 load_dotenv()

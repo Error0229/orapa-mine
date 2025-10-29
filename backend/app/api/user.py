@@ -1,8 +1,11 @@
 """
 User API endpoints.
 """
-from fastapi import APIRouter, HTTPException, status
+
 from datetime import datetime
+
+from fastapi import APIRouter, HTTPException, status
+
 from app.schemas.user import UserCreate, UserResponse
 
 router = APIRouter()
@@ -17,8 +20,7 @@ async def create_user(user_data: UserCreate) -> UserResponse:
     """Register a new user."""
     if user_data.username in users_store:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already exists"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists"
         )
 
     user = {

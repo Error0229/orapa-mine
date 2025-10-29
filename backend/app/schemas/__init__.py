@@ -1,15 +1,16 @@
 """
 Pydantic schemas for API request/response models.
 """
+
 from app.schemas.game import (
     GameCreate,
     GameResponse,
+    GameState,
     PlacePieceRequest,
     ShootWaveRequest,
     ShootWaveResponse,
-    GameState,
 )
-from app.schemas.user import UserCreate, UserResponse, Token
+from app.schemas.user import Token, UserCreate, UserResponse
 
 __all__ = [
     "GameCreate",

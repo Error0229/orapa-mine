@@ -3,22 +3,24 @@ Ray tracing algorithm for elastic wave reflections in Orapa Mine.
 
 Handles wave propagation, reflections, and color mixing.
 """
-from typing import List, Tuple, Optional, Dict
-from dataclasses import dataclass
+
 import math
-from app.services.piece_geometry import PieceGeometry, Edge
-from app.services.color_mixer import ColorMixer, WaveColor, MineralColor
+from dataclasses import dataclass
+
+from app.services.color_mixer import ColorMixer, MineralColor, WaveColor
+from app.services.piece_geometry import Edge, PieceGeometry
 
 
 @dataclass
 class Vector2D:
     """2D vector for ray direction."""
+
     x: float
     y: float
 
     def normalize(self) -> "Vector2D":
         """Return normalized (unit) vector."""
-        length = math.sqrt(self.x ** 2 + self.y ** 2)
+        length = math.sqrt(self.x**2 + self.y**2)
         if length == 0:
             return Vector2D(0, 0)
         return Vector2D(self.x / length, self.y / length)
@@ -31,45 +33,46 @@ class Vector2D:
         """Reflect this vector across a normal."""
         # r = d - 2(d·n)n
         dot_product = self.dot(normal)
-        return Vector2D(
-            self.x - 2 * dot_product * normal.x,
-            self.y - 2 * dot_product * normal.y
-        )
+        return Vector2D(self.x - 2 * dot_product * normal.x, self.y - 2 * dot_product * normal.y)
 
 
 @dataclass
 class Ray:
     """Represents an elastic wave ray."""
-    origin: Tuple[float, float]  # (x, y) starting point
-    direction: Vector2D          # Direction vector (normalized)
-    color: WaveColor            # Current color of the wave
+
+    origin: tuple[float, float]  # (x, y) starting point
+    direction: Vector2D  # Direction vector (normalized)
+    color: WaveColor  # Current color of the wave
 
 
 @dataclass
 class Intersection:
     """Intersection between ray and edge."""
-    point: Tuple[float, float]  # Intersection point (x, y)
-    distance: float             # Distance from ray origin
-    edge: Edge                  # The edge that was hit
-    piece: PieceGeometry        # The piece this edge belongs to
+
+    point: tuple[float, float]  # Intersection point (x, y)
+    distance: float  # Distance from ray origin
+    edge: Edge  # The edge that was hit
+    piece: PieceGeometry  # The piece this edge belongs to
 
 
 @dataclass
 class WavePathSegment:
     """A segment of the wave's path."""
-    start: Tuple[float, float]
-    end: Tuple[float, float]
+
+    start: tuple[float, float]
+    end: tuple[float, float]
     color: WaveColor
 
 
 @dataclass
 class WaveResult:
     """Result of shooting an elastic wave."""
-    entry_position: str          # Where wave entered (e.g., "5", "A")
-    exit_position: Optional[str] # Where wave exited (or None if absorbed)
-    exit_color: Optional[WaveColor]  # Final color (or None if absorbed)
-    path: List[WavePathSegment]  # Complete path for visualization
-    reflections: int             # Number of reflections
+
+    entry_position: str  # Where wave entered (e.g., "5", "A")
+    exit_position: str | None  # Where wave exited (or None if absorbed)
+    exit_color: WaveColor | None  # Final color (or None if absorbed)
+    path: list[WavePathSegment]  # Complete path for visualization
+    reflections: int  # Number of reflections
 
 
 class RayTracer:
@@ -79,7 +82,7 @@ class RayTracer:
     GRID_HEIGHT = 8
     MAX_REFLECTIONS = 100  # Prevent infinite loops
 
-    def __init__(self, placed_pieces: List[Tuple[PieceGeometry, Tuple[int, int]]]):
+    def __init__(self, placed_pieces: list[tuple[PieceGeometry, tuple[int, int]]]):
         """
         Initialize ray tracer with placed pieces.
 
@@ -103,7 +106,7 @@ class RayTracer:
         if ray is None:
             raise ValueError(f"Invalid entry position: {entry_position}")
 
-        path_segments: List[WavePathSegment] = []
+        path_segments: list[WavePathSegment] = []
         current_ray = ray
         reflections = 0
 
@@ -115,27 +118,27 @@ class RayTracer:
                 # No intersection - ray exits the grid
                 exit_point = self._find_grid_exit(current_ray)
                 if exit_point:
-                    path_segments.append(WavePathSegment(
-                        start=current_ray.origin,
-                        end=exit_point,
-                        color=current_ray.color
-                    ))
+                    path_segments.append(
+                        WavePathSegment(
+                            start=current_ray.origin, end=exit_point, color=current_ray.color
+                        )
+                    )
                     exit_pos = self._point_to_edge_position(exit_point)
                     return WaveResult(
                         entry_position=entry_position,
                         exit_position=exit_pos,
                         exit_color=current_ray.color,
                         path=path_segments,
-                        reflections=reflections
+                        reflections=reflections,
                     )
                 break
 
             # Add path segment to intersection point
-            path_segments.append(WavePathSegment(
-                start=current_ray.origin,
-                end=intersection.point,
-                color=current_ray.color
-            ))
+            path_segments.append(
+                WavePathSegment(
+                    start=current_ray.origin, end=intersection.point, color=current_ray.color
+                )
+            )
 
             # Mix color with piece
             mineral_color = self._piece_color_to_mineral(intersection.piece.piece_color)
@@ -148,13 +151,12 @@ class RayTracer:
                     exit_position=None,
                     exit_color=None,
                     path=path_segments,
-                    reflections=reflections
+                    reflections=reflections,
                 )
 
             # Calculate reflection
             reflected_direction = self._calculate_reflection(
-                current_ray.direction,
-                intersection.edge
+                current_ray.direction, intersection.edge
             )
 
             # Create new ray from intersection point
@@ -162,14 +164,10 @@ class RayTracer:
             epsilon = 0.001
             new_origin = (
                 intersection.point[0] + reflected_direction.x * epsilon,
-                intersection.point[1] + reflected_direction.y * epsilon
+                intersection.point[1] + reflected_direction.y * epsilon,
             )
 
-            current_ray = Ray(
-                origin=new_origin,
-                direction=reflected_direction,
-                color=new_color
-            )
+            current_ray = Ray(origin=new_origin, direction=reflected_direction, color=new_color)
             reflections += 1
 
         # Max reflections reached - assume absorbed
@@ -178,10 +176,10 @@ class RayTracer:
             exit_position=None,
             exit_color=None,
             path=path_segments,
-            reflections=reflections
+            reflections=reflections,
         )
 
-    def _create_entry_ray(self, position: str) -> Optional[Ray]:
+    def _create_entry_ray(self, position: str) -> Ray | None:
         """Create initial ray from entry position."""
         position = position.upper()
 
@@ -191,7 +189,7 @@ class RayTracer:
             return Ray(
                 origin=(col + 0.5, 0.0),  # Center of cell at top
                 direction=Vector2D(0, 1),  # Downward
-                color=WaveColor.WHITE
+                color=WaveColor.WHITE,
             )
 
         # Numbers 11-18: left edge
@@ -200,33 +198,33 @@ class RayTracer:
             return Ray(
                 origin=(0.0, row + 0.5),  # Center of cell at left
                 direction=Vector2D(1, 0),  # Rightward
-                color=WaveColor.WHITE
+                color=WaveColor.WHITE,
             )
 
         # Letters A-J: bottom edge
-        if position.isalpha() and 'A' <= position <= 'J':
-            col = ord(position) - ord('A')
+        if position.isalpha() and "A" <= position <= "J":
+            col = ord(position) - ord("A")
             return Ray(
                 origin=(col + 0.5, self.GRID_HEIGHT),  # Center of cell at bottom
                 direction=Vector2D(0, -1),  # Upward
-                color=WaveColor.WHITE
+                color=WaveColor.WHITE,
             )
 
         # Letters K-R: right edge
-        if position.isalpha() and 'K' <= position <= 'R':
-            row = ord(position) - ord('K')
+        if position.isalpha() and "K" <= position <= "R":
+            row = ord(position) - ord("K")
             return Ray(
                 origin=(self.GRID_WIDTH, row + 0.5),  # Center of cell at right
                 direction=Vector2D(-1, 0),  # Leftward
-                color=WaveColor.WHITE
+                color=WaveColor.WHITE,
             )
 
         return None
 
-    def _find_nearest_intersection(self, ray: Ray) -> Optional[Intersection]:
+    def _find_nearest_intersection(self, ray: Ray) -> Intersection | None:
         """Find the nearest intersection between ray and any piece edge."""
-        nearest: Optional[Intersection] = None
-        min_distance = float('inf')
+        nearest: Intersection | None = None
+        min_distance = float("inf")
 
         for piece, (px, py) in self.placed_pieces:
             for edge in piece.edges:
@@ -236,36 +234,30 @@ class RayTracer:
 
                 # Calculate intersection
                 intersection_point = self._ray_edge_intersection(
-                    ray.origin,
-                    ray.direction,
-                    edge_start,
-                    edge_end
+                    ray.origin, ray.direction, edge_start, edge_end
                 )
 
                 if intersection_point:
                     distance = math.sqrt(
-                        (intersection_point[0] - ray.origin[0]) ** 2 +
-                        (intersection_point[1] - ray.origin[1]) ** 2
+                        (intersection_point[0] - ray.origin[0]) ** 2
+                        + (intersection_point[1] - ray.origin[1]) ** 2
                     )
 
                     if distance < min_distance and distance > 0.0001:  # Avoid self-intersection
                         min_distance = distance
                         nearest = Intersection(
-                            point=intersection_point,
-                            distance=distance,
-                            edge=edge,
-                            piece=piece
+                            point=intersection_point, distance=distance, edge=edge, piece=piece
                         )
 
         return nearest
 
     def _ray_edge_intersection(
         self,
-        ray_origin: Tuple[float, float],
+        ray_origin: tuple[float, float],
         ray_direction: Vector2D,
-        edge_start: Tuple[float, float],
-        edge_end: Tuple[float, float]
-    ) -> Optional[Tuple[float, float]]:
+        edge_start: tuple[float, float],
+        edge_end: tuple[float, float],
+    ) -> tuple[float, float] | None:
         """
         Calculate intersection between ray and line segment.
 
@@ -312,7 +304,7 @@ class RayTracer:
 
         return normal
 
-    def _find_grid_exit(self, ray: Ray) -> Optional[Tuple[float, float]]:
+    def _find_grid_exit(self, ray: Ray) -> tuple[float, float] | None:
         """Find where ray exits the grid bounds."""
         x, y = ray.origin
         dx, dy = ray.direction.x, ray.direction.y
@@ -355,7 +347,7 @@ class RayTracer:
 
         return None
 
-    def _point_to_edge_position(self, point: Tuple[float, float]) -> str:
+    def _point_to_edge_position(self, point: tuple[float, float]) -> str:
         """Convert exit point to edge position label."""
         x, y = point
         epsilon = 0.01
@@ -370,7 +362,7 @@ class RayTracer:
         if abs(y - self.GRID_HEIGHT) < epsilon:
             col = int(x)
             if 0 <= col < 10:
-                return chr(ord('A') + col)
+                return chr(ord("A") + col)
 
         # Left edge
         if abs(x) < epsilon:
@@ -382,7 +374,7 @@ class RayTracer:
         if abs(x - self.GRID_WIDTH) < epsilon:
             row = int(y)
             if 0 <= row < 8:
-                return chr(ord('K') + row)
+                return chr(ord("K") + row)
 
         return "?"
 
