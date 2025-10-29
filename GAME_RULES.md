@@ -20,13 +20,48 @@ Orapa Mine is a deduction board game where one player acts as the **Director** o
 4. **Solution Sheets** - Grid with numbered/lettered edges for tracking waves
 
 ### Mineral Pieces (Tangram Shapes)
-The game uses **7 standard tangram shapes** per set, available in different colors:
+The game includes the following pieces (6 tangram pieces + 1 petroleum block):
 
-1. **2 Large Triangles**
-2. **1 Medium Triangle**
-3. **2 Small Triangles**
-4. **1 Square**
+1. **2 Large Triangles** (Isosceles right triangles)
+   - Long side (hypotenuse): 4 cells
+   - Height: 2 cells
+   - Area: **4 cells** each
+   - Alignment: Long side aligns with grid cells
+   - Colors: 1× White, 1× Blue
+
+2. **1 Medium Triangle** (Isosceles right triangle)
+   - Short sides: 2 cells each
+   - Area: **2 cells**
+   - Alignment: Short side aligns with grid cells
+   - Colors: 1× Yellow
+
+3. **1 Small Triangle** (Isosceles right triangle)
+   - Long side (hypotenuse): 2 cells
+   - Height: 1 cell
+   - Area: **1 cell**
+   - Alignment: Long side aligns with grid cells
+   - Colors: 1× Transparent (reflects without color change)
+
+4. **1 Square** (Rotated 45° to appear as diamond)
+   - Each side: √2 cells
+   - Area: **2 cells**
+   - Alignment: Center aligned on grid cells
+   - Colors: 1× White
+
 5. **1 Parallelogram**
+   - Base: 2 cells
+   - Height: 1 cell
+   - Area: **2 cells**
+   - Alignment: Bottom aligns with grid cells
+   - Colors: 1× Red
+
+6. **1 Petroleum Block** (Rectangle)
+   - Dimensions: 1 cell × 2 cells
+   - Area: **2 cells**
+   - Special: Absorbs all light (wave dissipates)
+   - Colors: 1× Black
+
+**Total cells per complete set: 17 cells** (4+4+2+1+2+2+2)
 
 ### Mineral Colors
 - **Red** - Reflects and adds red to the wave color
@@ -42,21 +77,40 @@ The game uses **7 standard tangram shapes** per set, available in different colo
 - **Height**: 8 cells
 
 ### Edge Numbering/Lettering
-**TODO - VERIFY WITH USER:**
-- Top edge: Numbers 1-10 (10 positions)?
-- Left edge: Numbers 11-18 (8 positions)?
-- Bottom edge: Letters A-J (10 positions)?
-- Right edge: Letters K-R (8 positions)?
+The grid edges are labeled for shooting elastic waves:
+
+- **Top edge**: Numbers 1-10 (10 positions, one per column)
+- **Left edge**: Numbers 11-18 (8 positions, one per row)
+- **Bottom edge**: Letters A-J (10 positions, one per column)
+- **Right edge**: Letters K-R (8 positions, one per row)
+
+```
+    1  2  3  4  5  6  7  8  9  10
+   ┌──┬──┬──┬──┬──┬──┬──┬──┬──┬──┐
+11 │  │  │  │  │  │  │  │  │  │  │ K
+   ├──┼──┼──┼──┼──┼──┼──┼──┼──┼──┤
+12 │  │  │  │  │  │  │  │  │  │  │ L
+   ├──┼──┼──┼──┼──┼──┼──┼──┼──┼──┤
+13 │  │  │  │  │  │  │  │  │  │  │ M
+   ├──┼──┼──┼──┼──┼──┼──┼──┼──┼──┤
+14 │  │  │  │  │  │  │  │  │  │  │ N
+   ├──┼──┼──┼──┼──┼──┼──┼──┼──┼──┤
+15 │  │  │  │  │  │  │  │  │  │  │ O
+   ├──┼──┼──┼──┼──┼──┼──┼──┼──┼──┤
+16 │  │  │  │  │  │  │  │  │  │  │ P
+   ├──┼──┼──┼──┼──┼──┼──┼──┼──┼──┤
+17 │  │  │  │  │  │  │  │  │  │  │ Q
+   ├──┼──┼──┼──┼──┼──┼──┼──┼──┼──┤
+18 │  │  │  │  │  │  │  │  │  │  │ R
+   └──┴──┴──┴──┴──┴──┴──┴──┴──┴──┘
+    A  B  C  D  E  F  G  H  I  J
+```
 
 ### Tangram Piece Placement
-- Pieces align with grid cells
-- Each piece occupies multiple grid cells based on its shape
-- **TODO - VERIFY CELL COUNTS:**
-  - Large triangles: ? cells each
-  - Medium triangle: ? cells
-  - Small triangles: ? cells each
-  - Square: ? cells
-  - Parallelogram: ? cells
+- Pieces align with grid cells according to their specific alignment rules (see Mineral Pieces section)
+- Pieces can be rotated to any valid orientation (90°, 180°, 270°)
+- Pieces must not overlap with each other
+- Pieces must fit completely within the 10×8 grid
 
 ## Game Setup
 
@@ -95,21 +149,34 @@ On their turn, an explorer:
 
 ### Wave Reflection Rules
 
-**TODO - VERIFY EXACT MECHANICS:**
-- Tangram pieces have both **45° diagonal edges** and **180° straight edges**
-- Reflection direction depends on:
-  - Which edge of the piece the wave hits
-  - The orientation/rotation of the piece
-- **45° edges**: Wave bounces 90° perpendicular
-- **180° edges**: Wave bounces straight back?
+Tangram pieces have edges at different angles based on their shape and rotation:
+
+**Edge Types:**
+- **45° diagonal edges** (on triangular pieces, rotated square)
+- **180° straight edges** (horizontal/vertical edges on all pieces)
+
+**Reflection Behavior:**
+- **45° edges**: Wave bounces 90° perpendicular to its current direction
+  - Example: Wave traveling downward (↓) hits 45° edge (/) → bounces right (→)
+  - Example: Wave traveling right (→) hits 45° edge (/) → bounces upward (↑)
+- **180° straight edges**: Wave bounces straight back (reverses direction)
+  - Example: Wave traveling right (→) hits vertical edge (|) → bounces left (←)
+  - Example: Wave traveling down (↓) hits horizontal edge (─) → bounces up (↑)
+
+**Important Notes:**
+- Reflection depends on which edge of the piece the wave hits
+- The same piece can have different reflection behaviors depending on where the wave strikes it
+- Piece orientation/rotation affects which edges are presented to the wave
 
 ### Wave Entry Points
 
-**TODO - VERIFY:**
-- When shooting from position "5", does the wave enter:
-  - Between cells 4 and 5?
-  - At cell 5?
-  - Other?
+When shooting from a numbered or lettered position:
+- **Position "5" from top edge**: Wave enters at cell 5 (column 5) traveling downward
+- **Position "11" from left edge**: Wave enters at row 1 (first row) traveling right
+- **Position "E" from bottom edge**: Wave enters at cell 5 (column 5) traveling upward
+- **Position "K" from right edge**: Wave enters at row 1 (first row) traveling left
+
+The wave enters **at the cell position**, not between cells.
 
 ## Color Mixing System
 
@@ -186,32 +253,70 @@ The original game had a flaw when **two white/transparent tiles are placed in pe
 
 ## Implementation Notes
 
-**TODO - Technology decisions:**
-- What platform? (Web-based, Python, etc.)
-- UI framework?
-- Multiplayer support?
+### Technology Stack
+**Backend:**
+- **Python FastAPI** - High-performance async web framework
+- **PostgreSQL** - Relational database for game state persistence
+- **Piccolo ORM** - Python ORM with migration support
+- **Optional: Supabase** - Managed PostgreSQL with real-time features
 
-**Key Implementation Challenges:**
-1. Ray-tracing algorithm for wave bouncing
-2. Tangram piece rotation and cell occupation
-3. Color mixing logic
-4. Grid coordinate system
-5. User interface for both Director and Explorer views
+**Frontend:**
+- **Modern JavaScript Framework** (React/Vue/Svelte)
+- **WebSocket/SSE** - Real-time updates for multiplayer
+- **Canvas/SVG** - For rendering the game grid and pieces
+- **Responsive Design** - Beautiful, clean UI
+
+**Features:**
+- Multiplayer support with game sessions
+- Real-time wave tracing visualization
+- Game state persistence and replay
+- Player statistics and history
+
+### Key Implementation Challenges
+
+1. **Ray-tracing algorithm** - Simulate elastic wave bouncing through grid
+   - Calculate ray intersections with piece edges
+   - Handle reflections based on edge angles (45° vs 180°)
+   - Track color mixing as wave passes through pieces
+   - Detect when wave exits grid or is absorbed
+
+2. **Tangram piece geometry**
+   - Define piece shapes with precise coordinates
+   - Support rotation (0°, 90°, 180°, 270°)
+   - Calculate cell occupancy for each piece
+   - Validate piece placement (no overlaps, within bounds)
+
+3. **Color mixing logic**
+   - Implement additive color mixing (RGB)
+   - Handle transparent pieces
+   - Handle black petroleum absorption
+
+4. **Grid coordinate system**
+   - Map edge labels (1-18, A-R) to grid positions
+   - Convert between different coordinate systems
+   - Handle piece alignment rules
+
+5. **Multiplayer architecture**
+   - Game session management
+   - Role assignment (Director vs Explorers)
+   - Turn-based mechanics
+   - Real-time synchronization
+   - Guess validation
 
 ---
 
-## Questions to Resolve
+## Verification Checklist
 
-1. ✓ Tangram shapes - Confirmed: 7 standard tangram pieces
+1. ✓ Tangram shapes - Confirmed: 6 tangram pieces + 1 petroleum block
 2. ✓ Number of pieces - Confirmed: Variable, player-determined for difficulty
 3. ✓ Grid size - Confirmed: 10×8 cells
-4. Edge numbering exact layout - NEEDS VERIFICATION
-5. Piece area/cell counts - NEEDS VERIFICATION
-6. Reflection mechanics details - NEEDS VERIFICATION
-7. Wave entry point mechanics - NEEDS VERIFICATION
-8. Technology stack preference - NEEDS USER INPUT
-9. Failed guess consequences - NEEDS VERIFICATION
+4. ✓ Edge numbering - Confirmed: 1-18 (top/left), A-R (bottom/right)
+5. ✓ Piece dimensions and areas - Confirmed with exact measurements
+6. ✓ Reflection mechanics - Confirmed: 45° bounces 90°, 180° bounces back
+7. ✓ Wave entry points - Confirmed: Enters at cell position
+8. ✓ Technology stack - Confirmed: FastAPI + PostgreSQL + Piccolo + Modern frontend
+9. ⚠ Failed guess consequences - Still needs verification
 
 ---
 
-*This document will be updated as we verify details and implement the game.*
+*This document is complete and ready for implementation.*
