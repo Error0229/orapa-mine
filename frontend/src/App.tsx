@@ -8,11 +8,13 @@ function App() {
   const [sessionId, setSessionId] = useState<string>('')
   const [username, setUsername] = useState<string>('')
   const [role, setRole] = useState<'director' | 'explorer'>('explorer')
+  const [difficulty, setDifficulty] = useState<number>(5)
 
-  const handleGameStart = (session: string, user: string, userRole: 'director' | 'explorer') => {
+  const handleGameStart = (session: string, user: string, userRole: 'director' | 'explorer', gameDifficulty: number = 5) => {
     setSessionId(session)
     setUsername(user)
     setRole(userRole)
+    setDifficulty(gameDifficulty)
     setGameStarted(true)
   }
 
@@ -31,6 +33,7 @@ function App() {
             sessionId={sessionId}
             username={username}
             role={role}
+            difficulty={difficulty}
           />
         )}
       </main>

@@ -1,37 +1,34 @@
 """
 Game-related models for Orapa Mine.
 """
-from piccolo.table import Table
-from piccolo.columns import (
-    Varchar,
-    Integer,
-    Boolean,
-    Text,
-    Timestamp,
-    JSON,
-    ForeignKey,
-)
-from piccolo.columns.readable import Readable
+
 from enum import Enum
+
+from piccolo.columns import JSON, Boolean, ForeignKey, Integer, OnDelete, Text, Timestamp, Varchar
+from piccolo.columns.readable import Readable
+from piccolo.table import Table
 
 
 class GameStatus(str, Enum):
     """Game status enum."""
-    WAITING = "waiting"       # Waiting for players
-    SETUP = "setup"           # Director is placing pieces
+
+    WAITING = "waiting"  # Waiting for players
+    SETUP = "setup"  # Director is placing pieces
     IN_PROGRESS = "in_progress"  # Game is active
-    COMPLETED = "completed"   # Game finished
-    CANCELLED = "cancelled"   # Game was cancelled
+    COMPLETED = "completed"  # Game finished
+    CANCELLED = "cancelled"  # Game was cancelled
 
 
 class PlayerRole(str, Enum):
     """Player role in a game."""
+
     DIRECTOR = "director"
     EXPLORER = "explorer"
 
 
 class PieceType(str, Enum):
     """Types of tangram pieces."""
+
     LARGE_TRIANGLE = "large_triangle"
     MEDIUM_TRIANGLE = "medium_triangle"
     SMALL_TRIANGLE = "small_triangle"
@@ -42,6 +39,7 @@ class PieceType(str, Enum):
 
 class PieceColor(str, Enum):
     """Colors of pieces."""
+
     RED = "red"
     BLUE = "blue"
     YELLOW = "yellow"
@@ -54,6 +52,7 @@ class Game(Table, tablename="games"):
     """
     Main game session table.
     """
+
     session_id = Varchar(length=50, unique=True, index=True)
     status = Varchar(length=20, default=GameStatus.WAITING.value)  # GameStatus
     current_turn_player = Varchar(length=50, null=True)  # Username of current player
@@ -66,7 +65,7 @@ class Game(Table, tablename="games"):
     winner_username = Varchar(length=50, null=True)
 
     @classmethod
-    def get_readable(cls):
+    def get_readable(cls) -> Readable:
         return Readable(template="%s", columns=[cls.session_id])
 
 
@@ -74,7 +73,8 @@ class GamePlayer(Table, tablename="game_players"):
     """
     Players in a specific game session.
     """
-    game = ForeignKey(Game, on_delete="CASCADE", index=True)
+
+    game = ForeignKey(Game, on_delete=OnDelete.cascade)
     username = Varchar(length=50, index=True)
     role = Varchar(length=20)  # PlayerRole
     joined_at = Timestamp()
@@ -82,7 +82,7 @@ class GamePlayer(Table, tablename="game_players"):
     turn_order = Integer(null=True)
 
     @classmethod
-    def get_readable(cls):
+    def get_readable(cls) -> Readable:
         return Readable(template="%s - %s", columns=[cls.username, cls.role])
 
 
@@ -90,6 +90,7 @@ class Piece(Table, tablename="pieces"):
     """
     Available piece types (reference table).
     """
+
     piece_type = Varchar(length=50, unique=True)  # PieceType
     piece_color = Varchar(length=50)  # PieceColor
     area_cells = Integer()  # Number of cells the piece occupies
@@ -97,7 +98,7 @@ class Piece(Table, tablename="pieces"):
     description = Text(null=True)
 
     @classmethod
-    def get_readable(cls):
+    def get_readable(cls) -> Readable:
         return Readable(template="%s (%s)", columns=[cls.piece_type, cls.piece_color])
 
 
@@ -105,7 +106,8 @@ class PlacedPiece(Table, tablename="placed_pieces"):
     """
     Pieces placed by the director in a game.
     """
-    game = ForeignKey(Game, on_delete="CASCADE", index=True)
+
+    game = ForeignKey(Game, on_delete=OnDelete.cascade)
     piece_type = Varchar(length=50)  # PieceType
     piece_color = Varchar(length=50)  # PieceColor
     position_x = Integer()  # Grid column (0-9)
@@ -115,10 +117,9 @@ class PlacedPiece(Table, tablename="placed_pieces"):
     placed_at = Timestamp()
 
     @classmethod
-    def get_readable(cls):
+    def get_readable(cls) -> Readable:
         return Readable(
-            template="%s at (%s, %s)",
-            columns=[cls.piece_type, cls.position_x, cls.position_y]
+            template="%s at (%s, %s)", columns=[cls.piece_type, cls.position_x, cls.position_y]
         )
 
 
@@ -126,7 +127,8 @@ class WaveShot(Table, tablename="wave_shots"):
     """
     Record of elastic wave shots by explorers.
     """
-    game = ForeignKey(Game, on_delete="CASCADE", index=True)
+
+    game = ForeignKey(Game, on_delete=OnDelete.cascade)
     player_username = Varchar(length=50, index=True)
     entry_position = Varchar(length=5)  # e.g., "5", "11", "E", "K"
     exit_position = Varchar(length=5, null=True)  # Where wave exited (or null if absorbed)
@@ -135,8 +137,8 @@ class WaveShot(Table, tablename="wave_shots"):
     shot_at = Timestamp()
 
     @classmethod
-    def get_readable(cls):
+    def get_readable(cls) -> Readable:
         return Readable(
             template="%s -> %s (%s)",
-            columns=[cls.entry_position, cls.exit_position, cls.exit_color]
+            columns=[cls.entry_position, cls.exit_position, cls.exit_color],
         )

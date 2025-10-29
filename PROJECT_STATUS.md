@@ -105,11 +105,23 @@ GET    /api/v1/users/{username}   - Get user info
 docker-compose up -d
 ```
 
-2. **Start Backend:**
+2. **Set up Backend:**
 ```bash
 cd backend
-uv pip install -e ".[dev]"
-cp .env.example .env
+
+# Create virtual environment
+make setup
+
+# Activate it
+source .venv/bin/activate
+
+# Create .env file
+make env
+
+# Install dependencies
+make dev-install
+
+# Start server
 make run
 ```
 Backend runs at `http://localhost:8000`

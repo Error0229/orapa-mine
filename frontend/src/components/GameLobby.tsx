@@ -3,7 +3,7 @@ import axios from 'axios'
 import './GameLobby.css'
 
 interface GameLobbyProps {
-  onGameStart: (sessionId: string, username: string, role: 'director' | 'explorer') => void
+  onGameStart: (sessionId: string, username: string, role: 'director' | 'explorer', difficulty: number) => void
 }
 
 function GameLobby({ onGameStart }: GameLobbyProps) {
@@ -41,7 +41,7 @@ function GameLobby({ onGameStart }: GameLobbyProps) {
         await axios.post(`/api/v1/games/${sessionId}/start`)
       }
 
-      onGameStart(sessionId, username, role)
+      onGameStart(sessionId, username, role, difficulty)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to create game')
     } finally {

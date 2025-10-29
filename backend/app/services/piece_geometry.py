@@ -7,14 +7,15 @@ Each piece is defined by its vertices in a coordinate system where:
 - Y-axis increases downward
 - Each unit represents one grid cell
 """
-from typing import List, Tuple, Dict, Any
+
+import math
 from dataclasses import dataclass
 from enum import Enum
-import math
 
 
 class PieceType(str, Enum):
     """Types of tangram pieces."""
+
     LARGE_TRIANGLE_1 = "large_triangle_1"
     LARGE_TRIANGLE_2 = "large_triangle_2"
     MEDIUM_TRIANGLE = "medium_triangle"
@@ -26,6 +27,7 @@ class PieceType(str, Enum):
 
 class PieceColor(str, Enum):
     """Colors of pieces."""
+
     RED = "red"
     BLUE = "blue"
     YELLOW = "yellow"
@@ -45,8 +47,9 @@ class Edge:
         angle: Angle of the edge in degrees (0=horizontal right, 90=down, 180=left, 270=up)
         is_diagonal: True if edge is at 45° or 135°, False if 0°, 90°, 180°, or 270°
     """
-    start: Tuple[float, float]
-    end: Tuple[float, float]
+
+    start: tuple[float, float]
+    end: tuple[float, float]
     angle: float
     is_diagonal: bool
 
@@ -64,14 +67,15 @@ class PieceGeometry:
         edges: List of edges with reflection properties
         rotation: Current rotation in degrees (0, 90, 180, 270)
     """
+
     piece_type: PieceType
     piece_color: PieceColor
-    vertices: List[Tuple[float, float]]
+    vertices: list[tuple[float, float]]
     area: int
-    edges: List[Edge]
+    edges: list[Edge]
     rotation: int = 0
 
-    def get_occupied_cells(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
+    def get_occupied_cells(self, position: tuple[int, int]) -> list[tuple[int, int]]:
         """
         Calculate which grid cells this piece occupies when placed at position.
 
@@ -98,7 +102,7 @@ class PieceGeometry:
 
         return occupied
 
-    def _point_in_polygon(self, point: Tuple[float, float]) -> bool:
+    def _point_in_polygon(self, point: tuple[float, float]) -> bool:
         """Check if a point is inside the polygon using ray casting algorithm."""
         x, y = point
         n = len(self.vertices)
@@ -107,13 +111,11 @@ class PieceGeometry:
         p1x, p1y = self.vertices[0]
         for i in range(1, n + 1):
             p2x, p2y = self.vertices[i % n]
-            if y > min(p1y, p2y):
-                if y <= max(p1y, p2y):
-                    if x <= max(p1x, p2x):
-                        if p1y != p2y:
-                            xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
-                        if p1x == p2x or x <= xinters:
-                            inside = not inside
+            if y > min(p1y, p2y) and y <= max(p1y, p2y) and x <= max(p1x, p2x):
+                if p1y != p2y:
+                    xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                if p1x == p2x or x <= xinters:
+                    inside = not inside
             p1x, p1y = p2x, p2y
 
         return inside
@@ -146,12 +148,14 @@ class PieceGeometry:
 
             new_angle = (edge.angle + degrees) % 360
 
-            rotated_edges.append(Edge(
-                start=(start_x, start_y),
-                end=(end_x, end_y),
-                angle=new_angle,
-                is_diagonal=edge.is_diagonal
-            ))
+            rotated_edges.append(
+                Edge(
+                    start=(start_x, start_y),
+                    end=(end_x, end_y),
+                    angle=new_angle,
+                    is_diagonal=edge.is_diagonal,
+                )
+            )
 
         return PieceGeometry(
             piece_type=self.piece_type,
@@ -159,67 +163,72 @@ class PieceGeometry:
             vertices=rotated_vertices,
             area=self.area,
             edges=rotated_edges,
-            rotation=(self.rotation + degrees) % 360
+            rotation=(self.rotation + degrees) % 360,
         )
 
 
 def create_large_triangle(color: PieceColor) -> PieceGeometry:
     """
     Create a large isosceles right triangle.
-    - Long side (hypotenuse): 4 cells
+    - Hypotenuse (long side): 4 cells, aligned with grid
+    - Two equal legs: 2√2 ≈ 2.828 cells each
     - Height: 2 cells
     - Area: 4 cells
-    - Aligns long side with grid
+    - Right angle at top-left, hypotenuse along bottom
 
-    Shape (aligned with long side horizontal):
+    Shape (hypotenuse aligned horizontally):
         |\
         | \
         |__\
         4 cells wide, 2 cells tall
     """
     vertices = [
-        (0.0, 0.0),  # Top-left
+        (0.0, 0.0),  # Top-left (right angle)
         (0.0, 2.0),  # Bottom-left
-        (4.0, 2.0),  # Bottom-right (hypotenuse end)
+        (4.0, 0.0),  # Top-right (hypotenuse along bottom when rotated)
     ]
 
     edges = [
-        Edge((0.0, 0.0), (0.0, 2.0), angle=270, is_diagonal=False),  # Left vertical
-        Edge((0.0, 2.0), (4.0, 2.0), angle=0, is_diagonal=False),    # Bottom horizontal
-        Edge((4.0, 2.0), (0.0, 0.0), angle=135, is_diagonal=True),   # Hypotenuse (45°)
+        Edge((0.0, 0.0), (0.0, 2.0), angle=270, is_diagonal=False),  # Left vertical leg
+        Edge((0.0, 2.0), (4.0, 0.0), angle=45, is_diagonal=True),    # Hypotenuse (45°)
+        Edge((4.0, 0.0), (0.0, 0.0), angle=180, is_diagonal=False),  # Top horizontal leg
     ]
 
     return PieceGeometry(
-        piece_type=PieceType.LARGE_TRIANGLE_1 if color == PieceColor.WHITE else PieceType.LARGE_TRIANGLE_2,
+        piece_type=PieceType.LARGE_TRIANGLE_1
+        if color == PieceColor.WHITE
+        else PieceType.LARGE_TRIANGLE_2,
         piece_color=color,
         vertices=vertices,
         area=4,
-        edges=edges
+        edges=edges,
     )
 
 
 def create_medium_triangle() -> PieceGeometry:
     """
     Create a medium isosceles right triangle.
-    - Short sides: 2 cells each
+    - Two equal legs: 2 cells each
+    - Hypotenuse: 2√2 ≈ 2.828 cells
     - Area: 2 cells
-    - Aligns short side with grid
+    - Right angle at origin
 
-    Shape:
+    Shape (isosceles right triangle):
         |\
-        |_\
-        2x2 cells
+        | \
+        |__\
+        2 × 2 cells
     """
     vertices = [
-        (0.0, 0.0),  # Top-left
-        (0.0, 2.0),  # Bottom-left
-        (2.0, 2.0),  # Bottom-right
+        (0.0, 0.0),  # Right angle corner
+        (0.0, 2.0),  # Top of vertical leg
+        (2.0, 0.0),  # End of horizontal leg
     ]
 
     edges = [
-        Edge((0.0, 0.0), (0.0, 2.0), angle=270, is_diagonal=False),  # Left vertical
-        Edge((0.0, 2.0), (2.0, 2.0), angle=0, is_diagonal=False),    # Bottom horizontal
-        Edge((2.0, 2.0), (0.0, 0.0), angle=135, is_diagonal=True),   # Hypotenuse
+        Edge((0.0, 0.0), (0.0, 2.0), angle=270, is_diagonal=False),  # Left vertical leg
+        Edge((0.0, 2.0), (2.0, 0.0), angle=135, is_diagonal=True),  # Hypotenuse (45°)
+        Edge((2.0, 0.0), (0.0, 0.0), angle=180, is_diagonal=False),  # Bottom horizontal leg
     ]
 
     return PieceGeometry(
@@ -227,33 +236,34 @@ def create_medium_triangle() -> PieceGeometry:
         piece_color=PieceColor.YELLOW,
         vertices=vertices,
         area=2,
-        edges=edges
+        edges=edges,
     )
 
 
 def create_small_triangle() -> PieceGeometry:
     """
     Create a small isosceles right triangle.
-    - Long side (hypotenuse): 2 cells
+    - Hypotenuse (long side): 2 cells, aligned with grid
+    - Two equal legs: √2 ≈ 1.414 cells each
     - Height: 1 cell
     - Area: 1 cell
-    - Aligns long side with grid
+    - Right angle at top-left, hypotenuse along bottom
 
-    Shape:
+    Shape (hypotenuse aligned horizontally):
         |\
         |_\
         2 cells wide, 1 cell tall
     """
     vertices = [
-        (0.0, 0.0),  # Top-left
+        (0.0, 0.0),  # Top-left (right angle)
         (0.0, 1.0),  # Bottom-left
-        (2.0, 1.0),  # Bottom-right
+        (2.0, 0.0),  # Top-right (hypotenuse along bottom when rotated)
     ]
 
     edges = [
-        Edge((0.0, 0.0), (0.0, 1.0), angle=270, is_diagonal=False),  # Left vertical
-        Edge((0.0, 1.0), (2.0, 1.0), angle=0, is_diagonal=False),    # Bottom horizontal
-        Edge((2.0, 1.0), (0.0, 0.0), angle=135, is_diagonal=True),   # Hypotenuse
+        Edge((0.0, 0.0), (0.0, 1.0), angle=270, is_diagonal=False),  # Left vertical leg
+        Edge((0.0, 1.0), (2.0, 0.0), angle=45, is_diagonal=True),    # Hypotenuse (45°)
+        Edge((2.0, 0.0), (0.0, 0.0), angle=180, is_diagonal=False),  # Top horizontal leg
     ]
 
     return PieceGeometry(
@@ -261,12 +271,12 @@ def create_small_triangle() -> PieceGeometry:
         piece_color=PieceColor.TRANSPARENT,
         vertices=vertices,
         area=1,
-        edges=edges
+        edges=edges,
     )
 
 
 def create_square() -> PieceGeometry:
-    """
+    r"""
     Create a square rotated 45° (appears as diamond).
     - Each side: √2 cells
     - Area: 2 cells
@@ -279,19 +289,19 @@ def create_square() -> PieceGeometry:
     """
     # Square with side √2 rotated 45° fits in 2x2 grid, centered
     # Vertices form a diamond
-    s = math.sqrt(2)  # Side length
+    math.sqrt(2)  # Side length
     vertices = [
-        (1.0, 0.0),    # Top
-        (2.0, 1.0),    # Right
-        (1.0, 2.0),    # Bottom
-        (0.0, 1.0),    # Left
+        (1.0, 0.0),  # Top
+        (2.0, 1.0),  # Right
+        (1.0, 2.0),  # Bottom
+        (0.0, 1.0),  # Left
     ]
 
     edges = [
-        Edge((1.0, 0.0), (2.0, 1.0), angle=45, is_diagonal=True),    # Top-right
-        Edge((2.0, 1.0), (1.0, 2.0), angle=135, is_diagonal=True),   # Bottom-right
-        Edge((1.0, 2.0), (0.0, 1.0), angle=225, is_diagonal=True),   # Bottom-left
-        Edge((0.0, 1.0), (1.0, 0.0), angle=315, is_diagonal=True),   # Top-left
+        Edge((1.0, 0.0), (2.0, 1.0), angle=45, is_diagonal=True),  # Top-right
+        Edge((2.0, 1.0), (1.0, 2.0), angle=135, is_diagonal=True),  # Bottom-right
+        Edge((1.0, 2.0), (0.0, 1.0), angle=225, is_diagonal=True),  # Bottom-left
+        Edge((0.0, 1.0), (1.0, 0.0), angle=315, is_diagonal=True),  # Top-left
     ]
 
     return PieceGeometry(
@@ -299,7 +309,7 @@ def create_square() -> PieceGeometry:
         piece_color=PieceColor.WHITE,
         vertices=vertices,
         area=2,
-        edges=edges
+        edges=edges,
     )
 
 
@@ -323,10 +333,10 @@ def create_parallelogram() -> PieceGeometry:
     ]
 
     edges = [
-        Edge((0.0, 0.0), (1.0, 0.0), angle=0, is_diagonal=False),    # Top horizontal
-        Edge((1.0, 0.0), (2.0, 1.0), angle=45, is_diagonal=True),    # Right diagonal
+        Edge((0.0, 0.0), (1.0, 0.0), angle=0, is_diagonal=False),  # Top horizontal
+        Edge((1.0, 0.0), (2.0, 1.0), angle=45, is_diagonal=True),  # Right diagonal
         Edge((2.0, 1.0), (1.0, 1.0), angle=180, is_diagonal=False),  # Bottom horizontal
-        Edge((1.0, 1.0), (0.0, 0.0), angle=135, is_diagonal=True),   # Left diagonal
+        Edge((1.0, 1.0), (0.0, 0.0), angle=135, is_diagonal=True),  # Left diagonal
     ]
 
     return PieceGeometry(
@@ -334,7 +344,7 @@ def create_parallelogram() -> PieceGeometry:
         piece_color=PieceColor.RED,
         vertices=vertices,
         area=2,
-        edges=edges
+        edges=edges,
     )
 
 
@@ -358,8 +368,8 @@ def create_petroleum() -> PieceGeometry:
     ]
 
     edges = [
-        Edge((0.0, 0.0), (1.0, 0.0), angle=0, is_diagonal=False),    # Top
-        Edge((1.0, 0.0), (1.0, 2.0), angle=90, is_diagonal=False),   # Right
+        Edge((0.0, 0.0), (1.0, 0.0), angle=0, is_diagonal=False),  # Top
+        Edge((1.0, 0.0), (1.0, 2.0), angle=90, is_diagonal=False),  # Right
         Edge((1.0, 2.0), (0.0, 2.0), angle=180, is_diagonal=False),  # Bottom
         Edge((0.0, 2.0), (0.0, 0.0), angle=270, is_diagonal=False),  # Left
     ]
@@ -369,7 +379,7 @@ def create_petroleum() -> PieceGeometry:
         piece_color=PieceColor.BLACK,
         vertices=vertices,
         area=2,
-        edges=edges
+        edges=edges,
     )
 
 
@@ -387,7 +397,7 @@ def get_piece_geometry(piece_type: PieceType) -> PieceGeometry:
     return pieces_map[piece_type]
 
 
-def get_all_pieces() -> List[PieceGeometry]:
+def get_all_pieces() -> list[PieceGeometry]:
     """Get all available piece geometries."""
     return [
         create_large_triangle(PieceColor.WHITE),

@@ -67,24 +67,30 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 docker-compose up -d
 ```
 
-3. **Install backend dependencies**:
+3. **Set up backend**:
 ```bash
 cd backend
-uv pip install -e ".[dev]"
+
+# Create virtual environment with uv
+make setup
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Create .env file
+make env
+# Edit .env with your configuration if needed
+
+# Install dependencies
+make dev-install
 ```
 
-4. **Set up environment**:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-5. **Run database migrations**:
+4. **Run database migrations**:
 ```bash
 make migrate
 ```
 
-6. **Start the backend server**:
+5. **Start the backend server**:
 ```bash
 make run
 # Or: uvicorn app.main:app --reload
@@ -95,21 +101,66 @@ Backend will be available at `http://localhost:8000`
 ### Development Commands
 
 ```bash
-# Format code
-make format
+# Show all available commands
+make help
 
-# Lint code
-make lint
+# Code quality
+make format      # Format code with ruff
+make lint        # Lint code with ruff
+make type-check  # Type check with mypy
 
-# Type check
-make type-check
+# Testing
+make test        # Run tests with pytest
 
-# Run tests
-make test
+# Environment
+make setup       # Create virtual environment
+make env         # Create .env from .env.example
+make sync        # Sync dependencies
 
-# Clean generated files
-make clean
+# Cleanup
+make clean       # Remove generated files
 ```
+
+## Environment Configuration
+
+The backend uses **Pydantic Settings** to load configuration from `.env` files automatically.
+
+### Creating `.env` File
+
+```bash
+cd backend
+make env  # Copies .env.example to .env
+```
+
+### Configuration Variables
+
+Edit `backend/.env` to customize:
+
+```bash
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/orapa_mine
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=orapa_mine
+DATABASE_USER=orapa_user
+DATABASE_PASSWORD=orapa_pass
+
+# Application
+APP_NAME=Orapa Mine
+DEBUG=true
+
+# CORS (comma-separated origins)
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+
+# Security (generate with: python -c "import secrets; print(secrets.token_urlsafe(32))")
+SECRET_KEY=your-secret-key-here
+
+# Server
+HOST=0.0.0.0
+PORT=8000
+```
+
+**Note**: The application automatically loads `.env` on startup using Pydantic Settings v2. All environment variables are case-insensitive.
 
 ## API Endpoints
 
@@ -145,11 +196,14 @@ make clean
    - Tracks wave path for visualization
 
 3. **Color Mixer** (`app/services/color_mixer.py`)
-   - Implements additive color mixing
-   - Red + Blue = Violet
-   - Red + Yellow = Orange
-   - Blue + Yellow = Green
-   - Red + Blue + Yellow = Black
+   - Implements additive color mixing:
+     - Red + Blue = Violet
+     - Red + Yellow = Orange
+     - Blue + Yellow = Green
+     - Red + Blue + Yellow = Black
+   - White minerals lighten colors (create pastel versions)
+   - Transparent minerals reflect without color change
+   - Black petroleum absorbs waves completely
 
 ### Database Models
 

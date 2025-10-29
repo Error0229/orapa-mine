@@ -1,7 +1,7 @@
 """
 Database models for Orapa Mine.
 """
-from app.models.user import User, Player
+
 from app.models.game import (
     Game,
     GamePlayer,
@@ -9,6 +9,7 @@ from app.models.game import (
     PlacedPiece,
     WaveShot,
 )
+from app.models.user import Player, User
 
 __all__ = [
     "User",

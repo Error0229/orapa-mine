@@ -1,25 +1,25 @@
 """
 Game API endpoints.
 """
-from fastapi import APIRouter, HTTPException, status
-from typing import List
-from datetime import datetime
+
 import secrets
+from datetime import datetime
+
+from fastapi import APIRouter, HTTPException, status
 
 from app.schemas.game import (
     GameCreate,
     GameResponse,
+    GameState,
+    PlacedPieceInfo,
     PlacePieceRequest,
+    PlayerInfo,
     ShootWaveRequest,
     ShootWaveResponse,
-    GameState,
-    PlayerInfo,
-    PlacedPieceInfo,
     WavePathSegment,
 )
-from app.services.piece_geometry import get_piece_geometry, PieceType
+from app.services.piece_geometry import PieceType, get_piece_geometry
 from app.services.ray_tracer import RayTracer
-from app.models.game import Game, GamePlayer, PlacedPiece, WaveShot
 
 router = APIRouter()
 
@@ -34,15 +34,16 @@ game_shots_store: dict = {}
 async def create_game(game_data: GameCreate) -> GameResponse:
     """Create a new game session."""
     session_id = secrets.token_urlsafe(16)
+    created_at = datetime.utcnow()
 
-    game = {
+    game: dict[str, object] = {
         "session_id": session_id,
         "status": "waiting",
         "current_turn_player": None,
         "director_username": None,
         "max_players": game_data.max_players,
         "difficulty": game_data.difficulty,
-        "created_at": datetime.utcnow(),
+        "created_at": created_at,
         "started_at": None,
         "completed_at": None,
         "winner_username": None,
@@ -53,7 +54,19 @@ async def create_game(game_data: GameCreate) -> GameResponse:
     game_pieces_store[session_id] = []
     game_shots_store[session_id] = []
 
-    return GameResponse(**game)
+    return GameResponse(
+        session_id=session_id,
+        status="waiting",
+        current_turn_player=None,
+        director_username=None,
+        max_players=game_data.max_players,
+        difficulty=game_data.difficulty,
+        players=[],
+        created_at=created_at,
+        started_at=None,
+        completed_at=None,
+        winner_username=None,
+    )
 
 
 @router.get("/{session_id}", response_model=GameResponse)
@@ -65,8 +78,8 @@ async def get_game(session_id: str) -> GameResponse:
     return GameResponse(**games_store[session_id])
 
 
-@router.get("/", response_model=List[GameResponse])
-async def list_games() -> List[GameResponse]:
+@router.get("/", response_model=list[GameResponse])
+async def list_games() -> list[GameResponse]:
     """List all available games."""
     return [GameResponse(**game) for game in games_store.values()]
 
@@ -91,12 +104,7 @@ async def join_game(session_id: str, username: str, role: str = "explorer") -> d
             raise HTTPException(status_code=400, detail="Director role already taken")
         game["director_username"] = username
 
-    player = PlayerInfo(
-        username=username,
-        role=role,
-        is_ready=False,
-        turn_order=None
-    )
+    player = PlayerInfo(username=username, role=role, is_ready=False, turn_order=None)
 
     game["players"].append(player.model_dump())
 
@@ -124,11 +132,7 @@ async def start_game(session_id: str) -> dict:
 
 
 @router.post("/{session_id}/pieces", status_code=status.HTTP_201_CREATED)
-async def place_piece(
-    session_id: str,
-    username: str,
-    piece_data: PlacePieceRequest
-) -> dict:
+async def place_piece(session_id: str, username: str, piece_data: PlacePieceRequest) -> dict:
     """Place a piece on the board (director only)."""
     if session_id not in games_store:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -145,8 +149,13 @@ async def place_piece(
     # Validate piece type
     try:
         piece_type = PieceType(piece_data.piece_type)
-    except ValueError:
-        raise HTTPException(status_code=400, detail=f"Invalid piece type: {piece_data.piece_type}")
+    except ValueError as err:
+        # Chain the original ValueError so it's clear this HTTPException was raised
+        # because of an invalid piece type input, not an error while handling the
+        # exception itself.
+        raise HTTPException(
+            status_code=400, detail=f"Invalid piece type: {piece_data.piece_type}"
+        ) from err
 
     # Get piece geometry
     piece_geom = get_piece_geometry(piece_type)
@@ -205,7 +214,7 @@ async def begin_gameplay(session_id: str) -> dict:
     if placed_count < game["difficulty"]:
         raise HTTPException(
             status_code=400,
-            detail=f"Must place {game['difficulty']} pieces (currently {placed_count})"
+            detail=f"Must place {game['difficulty']} pieces (currently {placed_count})",
         )
 
     game["status"] = "in_progress"
@@ -220,9 +229,7 @@ async def begin_gameplay(session_id: str) -> dict:
 
 @router.post("/{session_id}/shoot", response_model=ShootWaveResponse)
 async def shoot_wave(
-    session_id: str,
-    username: str,
-    wave_data: ShootWaveRequest
+    session_id: str, username: str, wave_data: ShootWaveRequest
 ) -> ShootWaveResponse:
     """Shoot an elastic wave."""
     if session_id not in games_store:
@@ -244,10 +251,9 @@ async def shoot_wave(
         if piece_data["rotation"] > 0:
             piece_geom = piece_geom.rotate(piece_data["rotation"])
 
-        placed_pieces_for_tracer.append((
-            piece_geom,
-            (piece_data["position_x"], piece_data["position_y"])
-        ))
+        placed_pieces_for_tracer.append(
+            (piece_geom, (piece_data["position_x"], piece_data["position_y"]))
+        )
 
     # Trace wave
     tracer = RayTracer(placed_pieces_for_tracer)
@@ -256,27 +262,26 @@ async def shoot_wave(
     # Convert path segments
     path_segments = []
     for segment in result.path:
-        path_segments.append(WavePathSegment(
-            start_x=segment.start[0],
-            start_y=segment.start[1],
-            end_x=segment.end[0],
-            end_y=segment.end[1],
-            color=str(segment.color.value) if segment.color else "white"
-        ))
+        path_segments.append(
+            WavePathSegment(
+                start_x=segment.start[0],
+                start_y=segment.start[1],
+                end_x=segment.end[0],
+                end_y=segment.end[1],
+                color=str(segment.color.value) if segment.color else "white",
+            )
+        )
 
     response = ShootWaveResponse(
         entry_position=result.entry_position,
         exit_position=result.exit_position,
         exit_color=str(result.exit_color.value) if result.exit_color else None,
         path=path_segments,
-        reflections=result.reflections
+        reflections=result.reflections,
     )
 
     # Store shot
-    game_shots_store[session_id].append({
-        "username": username,
-        "shot": response.model_dump()
-    })
+    game_shots_store[session_id].append({"username": username, "shot": response.model_dump()})
 
     return response
 
@@ -305,5 +310,5 @@ async def get_game_state(session_id: str, username: str) -> GameState:
         game_info=GameResponse(**game),
         placed_pieces=placed_pieces,
         wave_shots=wave_shots,
-        is_director=is_director
+        is_director=is_director,
     )
