@@ -67,24 +67,30 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 docker-compose up -d
 ```
 
-3. **Install backend dependencies**:
+3. **Set up backend**:
 ```bash
 cd backend
-uv pip install -e ".[dev]"
+
+# Create virtual environment with uv
+make setup
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Create .env file
+make env
+# Edit .env with your configuration if needed
+
+# Install dependencies
+make dev-install
 ```
 
-4. **Set up environment**:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-5. **Run database migrations**:
+4. **Run database migrations**:
 ```bash
 make migrate
 ```
 
-6. **Start the backend server**:
+5. **Start the backend server**:
 ```bash
 make run
 # Or: uvicorn app.main:app --reload
@@ -95,20 +101,24 @@ Backend will be available at `http://localhost:8000`
 ### Development Commands
 
 ```bash
-# Format code
-make format
+# Show all available commands
+make help
 
-# Lint code
-make lint
+# Code quality
+make format      # Format code with ruff
+make lint        # Lint code with ruff
+make type-check  # Type check with mypy
 
-# Type check
-make type-check
+# Testing
+make test        # Run tests with pytest
 
-# Run tests
-make test
+# Environment
+make setup       # Create virtual environment
+make env         # Create .env from .env.example
+make sync        # Sync dependencies
 
-# Clean generated files
-make clean
+# Cleanup
+make clean       # Remove generated files
 ```
 
 ## API Endpoints

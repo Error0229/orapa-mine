@@ -20,11 +20,11 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual environments
+# Virtual environments (uv)
+.venv/
 venv/
 ENV/
 env/
-.venv
 
 # Testing
 .pytest_cache/
