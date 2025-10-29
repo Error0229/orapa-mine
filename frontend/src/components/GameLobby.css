@@ -1,0 +1,79 @@
+.lobby-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  padding: 2rem;
+}
+
+.lobby-card {
+  max-width: 500px;
+  width: 100%;
+}
+
+.lobby-card h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.form-group input[type="text"],
+.form-group select {
+  width: 100%;
+}
+
+.form-group input[type="range"] {
+  width: 100%;
+}
+
+.difficulty-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-dim);
+}
+
+.error-message {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.info-box {
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid var(--primary);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.info-box h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+}
+
+.info-box p {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+button.primary {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+}

@@ -1,0 +1,149 @@
+.game-board-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.game-info {
+  background: var(--surface);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border);
+}
+
+.game-info h2 {
+  margin-bottom: 1rem;
+  color: var(--primary);
+}
+
+.game-info p {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.board-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .board-wrapper {
+    grid-template-columns: 1fr;
+  }
+}
+
+.canvas-container {
+  background: var(--surface);
+  padding: 2rem;
+  border-radius: 1rem;
+  border: 2px solid var(--border);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+}
+
+canvas {
+  border: 2px solid var(--primary);
+  border-radius: 0.5rem;
+  background: #1e293b;
+}
+
+.controls {
+  background: var(--surface);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  height: fit-content;
+}
+
+.controls h3 {
+  margin-bottom: 1.5rem;
+  color: var(--text);
+}
+
+.position-selector {
+  margin-bottom: 1.5rem;
+}
+
+.position-selector label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.position-selector select {
+  width: 100%;
+}
+
+.controls button {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+}
+
+.message {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+}
+
+.message.success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid var(--success);
+  color: var(--success);
+}
+
+.message.error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+.shot-history {
+  background: var(--surface);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+}
+
+.shot-history h3 {
+  margin-bottom: 1rem;
+}
+
+.shots-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.shot-item {
+  background: var(--surface-light);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  display: grid;
+  grid-template-columns: auto 1fr 1fr 1fr 1fr;
+  gap: 1rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.shot-number {
+  background: var(--primary);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  .shot-item {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+}
