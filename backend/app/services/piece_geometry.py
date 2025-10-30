@@ -190,7 +190,7 @@ def create_large_triangle(color: PieceColor) -> PieceGeometry:
 
     edges = [
         Edge((0.0, 0.0), (0.0, 2.0), angle=270, is_diagonal=False),  # Left vertical leg
-        Edge((0.0, 2.0), (4.0, 0.0), angle=45, is_diagonal=True),    # Hypotenuse (45°)
+        Edge((0.0, 2.0), (4.0, 0.0), angle=45, is_diagonal=True),  # Hypotenuse (45°)
         Edge((4.0, 0.0), (0.0, 0.0), angle=180, is_diagonal=False),  # Top horizontal leg
     ]
 
@@ -262,7 +262,7 @@ def create_small_triangle() -> PieceGeometry:
 
     edges = [
         Edge((0.0, 0.0), (0.0, 1.0), angle=270, is_diagonal=False),  # Left vertical leg
-        Edge((0.0, 1.0), (2.0, 0.0), angle=45, is_diagonal=True),    # Hypotenuse (45°)
+        Edge((0.0, 1.0), (2.0, 0.0), angle=45, is_diagonal=True),  # Hypotenuse (45°)
         Edge((2.0, 0.0), (0.0, 0.0), angle=180, is_diagonal=False),  # Top horizontal leg
     ]
 

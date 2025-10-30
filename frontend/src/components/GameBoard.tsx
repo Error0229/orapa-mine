@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
-import DirectorViewModern from './DirectorViewModern'
+import DirectorView from './DirectorView'
 import './GameBoard.css'
 
 interface GameBoardProps {
@@ -37,9 +37,9 @@ function GameBoard({ sessionId, username, role, difficulty = 5 }: GameBoardProps
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
-  // If director, show modern director view instead
+  // If director, show director view
   if (role === 'director') {
-    return <DirectorViewModern sessionId={sessionId} username={username} difficulty={difficulty} />
+    return <DirectorView sessionId={sessionId} username={username} difficulty={difficulty} />
   }
 
   useEffect(() => {
@@ -116,7 +116,7 @@ function GameBoard({ sessionId, username, role, difficulty = 5 }: GameBoardProps
 
     // Draw all wave paths
     waveShots.forEach((shot, index) => {
-      shot.path.forEach((segment, segmentIndex) => {
+      shot.path.forEach((segment) => {
         ctx.strokeStyle = getColorHex(segment.color)
         ctx.lineWidth = 3
         ctx.lineCap = 'round'
@@ -193,7 +193,7 @@ function GameBoard({ sessionId, username, role, difficulty = 5 }: GameBoardProps
     <div className="game-board-container">
       <div className="game-info">
         <h2>Game Session: {sessionId}</h2>
-        <p>Playing as: <strong>{role === 'director' ? 'Director' : 'Explorer'}</strong></p>
+        <p>Playing as: <strong>Explorer</strong></p>
         <p>Username: <strong>{username}</strong></p>
       </div>
 

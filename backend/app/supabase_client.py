@@ -9,7 +9,7 @@ from supabase import Client, create_client
 from app.config import settings
 
 
-@lru_cache()
+@lru_cache
 def get_supabase_client() -> Client:
     """
     Create and cache Supabase client instance.
@@ -26,7 +26,7 @@ def get_supabase_client() -> Client:
     return create_client(settings.supabase_url, settings.supabase_anon_key)
 
 
-@lru_cache()
+@lru_cache
 def get_supabase_admin_client() -> Client:
     """
     Create and cache Supabase admin client with service role key.

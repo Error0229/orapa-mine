@@ -176,12 +176,27 @@ async def place_piece(session_id: str, username: str, piece_data: PlacePieceRequ
         if not (0 <= cell_x < 10 and 0 <= cell_y < 8):
             raise HTTPException(status_code=400, detail="Piece extends outside grid")
 
-    # Check for overlaps with existing pieces
+    # Check for overlaps with existing pieces (excluding same piece type+color for replacement)
     existing_pieces = game_pieces_store[session_id]
     for existing in existing_pieces:
+        # Allow replacing the same piece
+        if (
+            existing["piece_type"] == piece_data.piece_type
+            and existing["piece_color"] == piece_data.piece_color
+        ):
+            continue
         for cell in occupied_cells:
             if cell in existing["occupied_cells"]:
                 raise HTTPException(status_code=400, detail="Piece overlaps with existing piece")
+
+    # Remove existing piece of same type+color (for replacement)
+    game_pieces_store[session_id] = [
+        p
+        for p in existing_pieces
+        if not (
+            p["piece_type"] == piece_data.piece_type and p["piece_color"] == piece_data.piece_color
+        )
+    ]
 
     # Add piece
     placed_piece = {
@@ -193,7 +208,7 @@ async def place_piece(session_id: str, username: str, piece_data: PlacePieceRequ
         "occupied_cells": occupied_cells,
     }
 
-    existing_pieces.append(placed_piece)
+    game_pieces_store[session_id].append(placed_piece)
 
     return {"message": "Piece placed successfully", "occupied_cells": occupied_cells}
 
@@ -225,6 +240,58 @@ async def begin_gameplay(session_id: str) -> dict:
         game["current_turn_player"] = explorers[0]["username"]
 
     return {"message": "Gameplay started - explorers can now shoot waves"}
+
+
+@router.post("/{session_id}/preview_wave", response_model=ShootWaveResponse)
+async def preview_wave(session_id: str, wave_data: ShootWaveRequest) -> ShootWaveResponse:
+    """Preview an elastic wave during setup (for director)."""
+    if session_id not in games_store:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    game = games_store[session_id]
+
+    if game["status"] not in ["setup", "waiting"]:
+        raise HTTPException(status_code=400, detail="Preview only available during setup")
+
+    # Build ray tracer with placed pieces
+    pieces_data = game_pieces_store[session_id]
+    placed_pieces_for_tracer = []
+
+    for piece_data in pieces_data:
+        piece_type = PieceType(piece_data["piece_type"])
+        piece_geom = get_piece_geometry(piece_type)
+
+        if piece_data["rotation"] > 0:
+            piece_geom = piece_geom.rotate(piece_data["rotation"])
+
+        placed_pieces_for_tracer.append(
+            (piece_geom, (piece_data["position_x"], piece_data["position_y"]))
+        )
+
+    # Trace wave
+    tracer = RayTracer(placed_pieces_for_tracer)
+    result = tracer.shoot_wave(wave_data.entry_position)
+
+    # Convert path segments
+    path_segments = []
+    for segment in result.path:
+        path_segments.append(
+            WavePathSegment(
+                start_x=segment.start[0],
+                start_y=segment.start[1],
+                end_x=segment.end[0],
+                end_y=segment.end[1],
+                color=str(segment.color.value) if segment.color else "white",
+            )
+        )
+
+    return ShootWaveResponse(
+        entry_position=result.entry_position,
+        exit_position=result.exit_position,
+        exit_color=str(result.exit_color.value) if result.exit_color else None,
+        path=path_segments,
+        reflections=result.reflections,
+    )
 
 
 @router.post("/{session_id}/shoot", response_model=ShootWaveResponse)

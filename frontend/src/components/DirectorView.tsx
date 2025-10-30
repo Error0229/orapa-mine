@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { motion } from 'framer-motion'
 import axios from 'axios'
-import PiecePalette, { PieceDefinition, PIECE_DEFINITIONS } from './PiecePalette'
+import toast, { Toaster } from 'react-hot-toast'
+import { PIECE_DEFINITIONS, PieceDefinition } from './PiecePalette'
 import './DirectorView.css'
 
 interface DirectorViewProps {
@@ -17,6 +19,12 @@ interface PlacedPiece {
   rotation: number
 }
 
+interface WavePreview {
+  entry: string
+  exit: string | null
+  color: string | null
+}
+
 const GRID_WIDTH = 10
 const GRID_HEIGHT = 8
 const CELL_SIZE = 50
@@ -26,58 +34,59 @@ const COLOR_MAP: Record<string, string> = {
   blue: '#3b82f6',
   yellow: '#eab308',
   white: '#f1f5f9',
-  transparent: 'rgba(148, 163, 184, 0.3)',
-  black: '#0f172a'
+  transparent: 'rgba(148, 163, 184, 0.4)',
+  black: '#1f2937'
 }
 
 function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [selectedPiece, setSelectedPiece] = useState<PieceDefinition | null>(null)
-  const [rotation, setRotation] = useState(0)
-  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null)
   const [placedPieces, setPlacedPieces] = useState<PlacedPiece[]>([])
-  const [message, setMessage] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [selectedPiece, setSelectedPiece] = useState<PieceDefinition | null>(null)
+  const [pieceRotations, setPieceRotations] = useState<Record<string, number>>({})
+  const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null)
   const [gameStarted, setGameStarted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [wavePreviews, setWavePreviews] = useState<WavePreview[]>([])
 
-  // Draw the grid and placed pieces
   useEffect(() => {
     drawCanvas()
-  }, [placedPieces, hoverPosition, selectedPiece, rotation])
+  }, [placedPieces, hoverCell, selectedPiece, pieceRotations])
 
-  // Keyboard controls
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'r' || e.key === 'R') {
-        setRotation((r) => (r + 90) % 360)
-      } else if (e.key === 'Escape') {
-        setSelectedPiece(null)
-        setRotation(0)
-      }
+    if (placedPieces.length > 0) {
+      fetchWavePreviews()
     }
+  }, [placedPieces])
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  const getPieceKey = (piece: PieceDefinition) => `${piece.type}-${piece.color}`
+
+  const getPieceRotation = (piece: PieceDefinition) => {
+    return pieceRotations[getPieceKey(piece)] || 0
+  }
+
+  const rotatePiece = (piece: PieceDefinition) => {
+    const key = getPieceKey(piece)
+    const currentRotation = pieceRotations[key] || 0
+    setPieceRotations(prev => ({
+      ...prev,
+      [key]: (currentRotation + 90) % 360
+    }))
+  }
+
+  const isPiecePlaced = (piece: PieceDefinition) => {
+    return placedPieces.some(p => p.type === piece.type && p.color === piece.color)
+  }
 
   const rotateVertices = (vertices: [number, number][], degrees: number): [number, number][] => {
     if (degrees === 0) return vertices
-
     const rad = (degrees * Math.PI) / 180
     const cos = Math.cos(rad)
     const sin = Math.sin(rad)
-
-    return vertices.map(([x, y]) => {
-      const newX = x * cos - y * sin
-      const newY = x * sin + y * cos
-      return [newX, newY]
-    })
+    return vertices.map(([x, y]) => [x * cos - y * sin, x * sin + y * cos])
   }
 
   const getOccupiedCells = (piece: PieceDefinition, position: { x: number; y: number }, rot: number): [number, number][] => {
     const rotated = rotateVertices(piece.vertices, rot)
-
-    // Get bounding box
     const xs = rotated.map(v => v[0])
     const ys = rotated.map(v => v[1])
     const minX = Math.min(...xs)
@@ -85,7 +94,6 @@ function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
     const minY = Math.min(...ys)
     const maxY = Math.max(...ys)
 
-    // Check cells using point-in-polygon
     const occupied: [number, number][] = []
     for (let y = Math.floor(minY); y < Math.ceil(maxY); y++) {
       for (let x = Math.floor(minX); x < Math.ceil(maxX); x++) {
@@ -95,42 +103,32 @@ function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
         }
       }
     }
-
     return occupied
   }
 
   const pointInPolygon = (point: [number, number], vertices: [number, number][]): boolean => {
     const [x, y] = point
     let inside = false
-
     for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
       const [xi, yi] = vertices[i]
       const [xj, yj] = vertices[j]
-
       if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
         inside = !inside
       }
     }
-
     return inside
   }
 
   const isValidPlacement = (piece: PieceDefinition, position: { x: number; y: number }, rot: number): boolean => {
     const occupied = getOccupiedCells(piece, position, rot)
 
-    // Check bounds
     for (const [x, y] of occupied) {
-      if (x < 0 || x >= GRID_WIDTH || y < 0 || y >= GRID_HEIGHT) {
-        return false
-      }
+      if (x < 0 || x >= GRID_WIDTH || y < 0 || y >= GRID_HEIGHT) return false
     }
 
-    // Check collisions with placed pieces (allowing replacement of same piece)
     const existingCells = new Set<string>()
     for (const placed of placedPieces) {
-      // Skip if this is the same piece type and color (we're replacing it)
       if (placed.type === piece.type && placed.color === piece.color) continue
-
       const placedPieceDef = PIECE_DEFINITIONS.find(p => p.type === placed.type && p.color === placed.color)
       if (placedPieceDef) {
         const cells = getOccupiedCells(placedPieceDef, { x: placed.position_x, y: placed.position_y }, placed.rotation)
@@ -139,27 +137,47 @@ function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
     }
 
     for (const [x, y] of occupied) {
-      if (existingCells.has(`${x},${y}`)) {
-        return false
+      if (existingCells.has(`${x},${y}`)) return false
+    }
+    return true
+  }
+
+  const fetchWavePreviews = async () => {
+    // Call the preview_wave endpoint to show wave paths
+    const positions = ['1', '5', '10', 'A', 'E', 'J', '11', '14', '18', 'K', 'N', 'R']
+    const previews: WavePreview[] = []
+
+    for (const pos of positions) {
+      try {
+        const response = await axios.post(
+          `/api/v1/games/${sessionId}/preview_wave`,
+          { entry_position: pos }
+        )
+        previews.push({
+          entry: pos,
+          exit: response.data.exit_position,
+          color: response.data.exit_color
+        })
+      } catch {
+        // Skip on error
       }
     }
 
-    return true
+    setWavePreviews(previews)
   }
 
   const drawCanvas = () => {
     const canvas = canvasRef.current
     if (!canvas) return
-
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
     // Clear
-    ctx.fillStyle = '#1e293b'
+    ctx.fillStyle = '#f8fafc'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     // Draw grid
-    ctx.strokeStyle = '#475569'
+    ctx.strokeStyle = '#e2e8f0'
     ctx.lineWidth = 1
 
     for (let x = 0; x <= GRID_WIDTH; x++) {
@@ -177,8 +195,8 @@ function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
     }
 
     // Draw edge labels
-    ctx.fillStyle = '#94a3b8'
-    ctx.font = '12px Inter'
+    ctx.fillStyle = '#64748b'
+    ctx.font = '12px system-ui'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
 
@@ -192,18 +210,27 @@ function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
       ctx.fillText(String.fromCharCode(75 + i), GRID_WIDTH * CELL_SIZE + 15, (i + 0.5) * CELL_SIZE)
     }
 
+    // Draw hover cell
+    if (hoverCell && selectedPiece) {
+      const rotation = getPieceRotation(selectedPiece)
+      const isValid = isValidPlacement(selectedPiece, hoverCell, rotation)
+      ctx.fillStyle = isValid ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'
+      ctx.fillRect(hoverCell.x * CELL_SIZE, hoverCell.y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+    }
+
     // Draw placed pieces
     placedPieces.forEach((placed) => {
       const pieceDef = PIECE_DEFINITIONS.find(p => p.type === placed.type && p.color === placed.color)
       if (pieceDef) {
-        drawPiece(ctx, pieceDef, { x: placed.position_x, y: placed.position_y }, placed.rotation, 1.0)
+        drawPiece(ctx, pieceDef, { x: placed.position_x, y: placed.position_y }, placed.rotation, 0.8)
       }
     })
 
-    // Draw hover preview
-    if (selectedPiece && hoverPosition) {
-      const isValid = isValidPlacement(selectedPiece, hoverPosition, rotation)
-      drawPiece(ctx, selectedPiece, hoverPosition, rotation, 0.5, isValid)
+    // Draw preview piece
+    if (selectedPiece && hoverCell) {
+      const rotation = getPieceRotation(selectedPiece)
+      const isValid = isValidPlacement(selectedPiece, hoverCell, rotation)
+      drawPiece(ctx, selectedPiece, hoverCell, rotation, 0.4, isValid)
     }
   }
 
@@ -216,7 +243,6 @@ function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
     isValid: boolean = true
   ) => {
     const rotated = rotateVertices(piece.vertices, rot)
-
     ctx.save()
     ctx.translate(position.x * CELL_SIZE, position.y * CELL_SIZE)
 
@@ -224,22 +250,17 @@ function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
     rotated.forEach(([x, y], i) => {
       const px = x * CELL_SIZE
       const py = y * CELL_SIZE
-      if (i === 0) {
-        ctx.moveTo(px, py)
-      } else {
-        ctx.lineTo(px, py)
-      }
+      if (i === 0) ctx.moveTo(px, py)
+      else ctx.lineTo(px, py)
     })
     ctx.closePath()
 
-    // Fill
     ctx.globalAlpha = opacity
     ctx.fillStyle = isValid ? COLOR_MAP[piece.color] : '#ef4444'
     ctx.fill()
 
-    // Stroke
     ctx.globalAlpha = 1
-    ctx.strokeStyle = isValid ? '#64748b' : '#dc2626'
+    ctx.strokeStyle = isValid ? '#475569' : '#dc2626'
     ctx.lineWidth = 2
     ctx.stroke()
 
@@ -247,8 +268,6 @@ function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
   }
 
   const handleCanvasClick = async (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!selectedPiece) return
-
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -256,19 +275,55 @@ function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
     const x = Math.floor((e.clientX - rect.left) / CELL_SIZE)
     const y = Math.floor((e.clientY - rect.top) / CELL_SIZE)
 
-    const position = { x, y }
-
-    if (!isValidPlacement(selectedPiece, position, rotation)) {
-      setMessage('Invalid placement: Piece overlaps or is out of bounds')
+    // Right-click rotates or cancels selection
+    if (e.button === 2) {
+      e.preventDefault()
+      if (selectedPiece) {
+        rotatePiece(selectedPiece)
+      }
       return
     }
 
-    await placePiece(position)
+    // If no piece selected, check if clicking on an existing piece to select it
+    if (!selectedPiece) {
+      // Check if clicked cell has a piece
+      for (const placedPiece of placedPieces) {
+        const pieceDef = PIECE_DEFINITIONS.find(p => p.type === placedPiece.type && p.color === placedPiece.color)
+        if (pieceDef) {
+          const cells = getOccupiedCells(pieceDef, { x: placedPiece.position_x, y: placedPiece.position_y }, placedPiece.rotation)
+          if (cells.some(([cx, cy]) => cx === x && cy === y)) {
+            // Select this piece for re-placement
+            setSelectedPiece(pieceDef)
+            toast(`Selected ${pieceDef.displayName} - Click to re-place or right-click to rotate`, {
+              icon: 'ℹ️',
+            })
+            return
+          }
+        }
+      }
+      return
+    }
+
+    const position = { x, y }
+    const rotation = getPieceRotation(selectedPiece)
+
+    if (!isValidPlacement(selectedPiece, position, rotation)) {
+      toast.error('Invalid placement')
+      return
+    }
+
+    await placePiece(position, rotation)
+  }
+
+  const handleCanvasWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    if (!selectedPiece) return
+    e.preventDefault()
+    rotatePiece(selectedPiece)
   }
 
   const handleCanvasMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!selectedPiece) {
-      setHoverPosition(null)
+      setHoverCell(null)
       return
     }
 
@@ -279,14 +334,13 @@ function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
     const x = Math.floor((e.clientX - rect.left) / CELL_SIZE)
     const y = Math.floor((e.clientY - rect.top) / CELL_SIZE)
 
-    setHoverPosition({ x, y })
+    setHoverCell({ x, y })
   }
 
-  const placePiece = async (position: { x: number; y: number }) => {
+  const placePiece = async (position: { x: number; y: number }, rotation: number) => {
     if (!selectedPiece) return
 
     setLoading(true)
-    setMessage('')
 
     try {
       await axios.post(
@@ -301,7 +355,6 @@ function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
         { params: { username } }
       )
 
-      // Update local state
       const newPiece: PlacedPiece = {
         type: selectedPiece.type,
         color: selectedPiece.color,
@@ -310,17 +363,15 @@ function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
         rotation: rotation
       }
 
-      // Replace if exists, otherwise add
       setPlacedPieces(prev => {
         const filtered = prev.filter(p => !(p.type === newPiece.type && p.color === newPiece.color))
         return [...filtered, newPiece]
       })
 
-      setMessage(`Placed ${selectedPiece.displayName}!`)
+      toast.success('Piece placed!')
       setSelectedPiece(null)
-      setRotation(0)
     } catch (err: any) {
-      setMessage(err.response?.data?.detail || 'Failed to place piece')
+      toast.error(err.response?.data?.detail || 'Failed to place piece')
     } finally {
       setLoading(false)
     }
@@ -328,79 +379,161 @@ function DirectorView({ sessionId, username, difficulty }: DirectorViewProps) {
 
   const handleBeginGame = async () => {
     if (placedPieces.length !== difficulty) {
-      setMessage(`Please place exactly ${difficulty} pieces before starting`)
+      toast.error(`Place exactly ${difficulty} pieces`)
       return
     }
 
     setLoading(true)
-    setMessage('')
 
     try {
       await axios.post(`/api/v1/games/${sessionId}/begin`, {}, { params: { username } })
       setGameStarted(true)
-      setMessage('Game started! Explorers can now shoot waves.')
+      toast.success('Game started!')
     } catch (err: any) {
-      setMessage(err.response?.data?.detail || 'Failed to start game')
+      toast.error(err.response?.data?.detail || 'Failed to start game')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="director-view">
-      <div className="director-header">
-        <h2>Director Setup</h2>
-        <p>Place {difficulty} pieces on the grid to begin the game</p>
-      </div>
-
-      <div className="director-content">
-        <div className="director-left">
-          <PiecePalette
-            difficulty={difficulty}
-            onPieceSelect={setSelectedPiece}
-            selectedPiece={selectedPiece}
-            placedPieces={placedPieces.map(p => ({ type: p.type, color: p.color }))}
-          />
-
-          <div className="director-actions">
-            <button
-              className="begin-game-btn"
-              onClick={handleBeginGame}
-              disabled={loading || gameStarted || placedPieces.length !== difficulty}
-            >
-              {gameStarted ? 'Game Started ✓' : `Begin Game (${placedPieces.length}/${difficulty})`}
-            </button>
-
-            {message && (
-              <div className={`director-message ${message.includes('Failed') || message.includes('Invalid') ? 'error' : 'success'}`}>
-                {message}
-              </div>
-            )}
+    <>
+      <Toaster position="top-right" />
+      <div className="director-view">
+        {/* Header */}
+        <div className="director-header">
+          <h1>Director Setup</h1>
+          <div className="director-progress">
+            <span>{placedPieces.length} / {difficulty} pieces</span>
+            <div className="progress-bar" style={{ width: `${(placedPieces.length / difficulty) * 100}%` }} />
           </div>
         </div>
 
-        <div className="director-right">
-          <div className="canvas-wrapper">
+        <div className="director-content">
+          {/* Left - Pieces */}
+          <div className="pieces-panel">
+            <h3>Pieces</h3>
+            <div className="pieces-grid">
+              {PIECE_DEFINITIONS.map((piece) => {
+                const isPlaced = isPiecePlaced(piece)
+                const isSelected = selectedPiece?.type === piece.type && selectedPiece?.color === piece.color
+                const rotation = getPieceRotation(piece)
+
+                return (
+                  <motion.div
+                    key={getPieceKey(piece)}
+                    className={`piece-card ${isPlaced ? 'placed' : ''} ${isSelected ? 'selected' : ''}`}
+                    onClick={() => {
+                      if (!isPlaced) {
+                        setSelectedPiece(isSelected ? null : piece)
+                      }
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      if (!isPlaced) rotatePiece(piece)
+                    }}
+                    whileHover={{ scale: isPlaced ? 1 : 1.05 }}
+                    whileTap={{ scale: isPlaced ? 1 : 0.95 }}
+                  >
+                    <svg width="60" height="60" viewBox="0 0 80 80">
+                      <PieceSVG piece={piece} scale={15} rotation={rotation} />
+                    </svg>
+                    <div className="piece-info">
+                      <span>{piece.displayName.split(' ')[0]}</span>
+                      <span className="rotation-badge">{rotation}°</span>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
+            <div className="hint-text">
+              💡 Right-click or scroll to rotate<br/>
+              Left-click to select, then click grid to place
+            </div>
+          </div>
+
+          {/* Center - Grid */}
+          <div className="grid-panel">
             <canvas
               ref={canvasRef}
               width={GRID_WIDTH * CELL_SIZE}
               height={GRID_HEIGHT * CELL_SIZE}
               onClick={handleCanvasClick}
+              onContextMenu={handleCanvasClick}
+              onWheel={handleCanvasWheel}
               onMouseMove={handleCanvasMove}
-              onMouseLeave={() => setHoverPosition(null)}
-              style={{ cursor: selectedPiece ? 'crosshair' : 'default' }}
+              onMouseLeave={() => setHoverCell(null)}
+              className="canvas-final"
             />
           </div>
 
-          {selectedPiece && (
-            <div className="rotation-indicator">
-              Current rotation: <strong>{rotation}°</strong>
-              <span className="rotation-hint">Press R to rotate</span>
+          {/* Right - Wave Preview */}
+          <div className="preview-panel-final">
+            <h3>Laser Preview</h3>
+            <div className="wave-previews">
+              {wavePreviews.length > 0 ? (
+                wavePreviews.map((wave, idx) => (
+                  <div key={idx} className="wave-preview-item">
+                    <span className="wave-entry">{wave.entry}</span>
+                    <span className="wave-arrow">→</span>
+                    <span className="wave-exit" style={{ color: wave.color ? COLOR_MAP[wave.color] : '#94a3b8' }}>
+                      {wave.exit || '✕'}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="preview-empty">
+                  Place pieces to see laser paths
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
+
+        {/* Begin Button */}
+        <button
+          className="btn primary begin-btn"
+          onClick={handleBeginGame}
+          disabled={loading || gameStarted || placedPieces.length !== difficulty}
+        >
+          {gameStarted ? '✓ Game Started' : 'Begin Game'}
+        </button>
       </div>
-    </div>
+    </>
+  )
+}
+
+function PieceSVG({ piece, scale = 15, rotation = 0 }: { piece: PieceDefinition; scale?: number; rotation?: number }) {
+  const rotated = piece.vertices.map(([x, y]): [number, number] => {
+    if (rotation === 0) return [x, y]
+    const rad = (rotation * Math.PI) / 180
+    const cos = Math.cos(rad)
+    const sin = Math.sin(rad)
+    return [x * cos - y * sin, x * sin + y * cos]
+  })
+
+  const minX = Math.min(...rotated.map(v => v[0]))
+  const maxX = Math.max(...rotated.map(v => v[0]))
+  const minY = Math.min(...rotated.map(v => v[1]))
+  const maxY = Math.max(...rotated.map(v => v[1]))
+
+  const offsetX = -minX * scale + (80 - (maxX - minX) * scale) / 2
+  const offsetY = -minY * scale + (80 - (maxY - minY) * scale) / 2
+
+  const pathData = rotated.map((v, i) => {
+    const x = v[0] * scale + offsetX
+    const y = v[1] * scale + offsetY
+    return `${i === 0 ? 'M' : 'L'} ${x} ${y}`
+  }).join(' ') + ' Z'
+
+  return (
+    <path
+      d={pathData}
+      fill={COLOR_MAP[piece.color]}
+      stroke="#475569"
+      strokeWidth="2"
+      opacity={piece.color === 'transparent' ? 0.4 : 0.9}
+    />
   )
 }
 
